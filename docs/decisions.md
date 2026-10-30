@@ -45,7 +45,7 @@
 | デコードと座標 | JPEG／PNG、EXIF Orientation適用、RGB化、透過PNGはRGB変換時に背景合成せずアルファを破棄する。安全な画像上限を設定 | image-analysis、non-functional-requirements |
 | 資源上限 | TODO：バイト数、解像度、総ピクセル数、時間、並列数を有界にする | non-functional-requirements |
 | 数値安定性 | validation行列の直交性許容誤差とsingularity条件は確定。統計共分散の条件数閾値・数値誤差許容幅は要検証。外眼角幅の追加下限はMVPに設けない | validation、statistics |
-| 結果とエラー型 | 内部成功結果の項目とエラー責務の分類は定義済み。具体的なPython型、サービス例外名、理由コードと表示順、HTTPステータスはTODO | analysis-service、validation |
+| 結果とエラー型 | 内部成功結果、サービス例外、理由コード、HTTPステータスを解析サービス設計に定義 | analysis-service、validation |
 | 安全性と復旧方式 | TODO：CSRF、ヘッダ、一時領域回収、推論停止方式を決める | non-functional-requirements |
 
 ## 検証後または公開前に決める事項

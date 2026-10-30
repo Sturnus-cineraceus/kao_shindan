@@ -27,7 +27,7 @@ validationが成功するまでfeature extractionとstatisticsを呼ばない。
 
 validationはLandmarkResultとDecodedImageの寸法・画素を使って、解析可否と品質チェック結果を判定する。解析サービスは判定結果を制御フローに反映し、失敗したチェックをWeb層へ渡せる形で保持する。チェック対象は顔数、顔サイズ、画像端への接触・近接、頭部姿勢、目、口、ぼけ、露出である。具体的な定義と既存の初期値は[validation.md](validation.md)を参照する。
 
-validationの点集合、姿勢算出規約、画質評価前処理と初期閾値は[validation.md](validation.md)を正本とする。失敗理由コードと複数不合格時の優先順は実装時に定める。validationが失敗した場合は失敗チェックを含むvalidation結果を保持して処理を打ち切り、成功結果型やスコアを生成しない。
+validationの点集合、姿勢算出規約、画質評価前処理と初期閾値は[validation.md](validation.md)を正本とする。失敗理由コードと優先順は本書のHTTP契約に定める。validationが失敗した場合は失敗チェックを含むvalidation結果を保持して処理を打ち切り、成功結果型やスコアを生成しない。
 
 ## 成功結果
 
@@ -50,7 +50,7 @@ validationの点集合、姿勢算出規約、画質評価前処理と初期閾�
 
 `measurements` のキーは `interpupillary_breadth`、`interocular_breadth`、`biectocanthion_breadth`、`mouth_breadth`。単位は抽出に使った正規化画像上のpixelである。比率キーと順序は `statistics.FEATURE_KEYS` の `interpupillary_breadth_ratio`、`interocular_breadth_ratio`、`mouth_breadth_ratio` とする。statisticsの `StatisticsResult.features` を結果へ統合し、比率の再計算や値の意味変更をしない。
 
-`algorithm_version` は前処理、使用ランドマーク、距離算出、比率定義、validation規則など画像由来の特徴生成処理を追跡する。参照統計の版とは別概念であり、`reference_model_version` を使って参照データ／モデルを追跡する。初期値や採番方式は既存設計で未決定のためTODOとし、複雑な方式を追加しない。MVPの `model_mode` は `summary_delta` とし、その式はstatistics層だけが所有する。解析サービスは統計式を再実装しない。
+`algorithm_version` は前処理、使用ランドマーク、距離算出、比率定義、validation規則など画像由来の特徴生成処理を追跡する。参照統計の版とは別概念であり、`reference_model_version` を使って参照データ／モデルを追跡する。初期値は `1` とし、複雑な採番方式は追加しない。MVPの `model_mode` は `summary_delta` とし、その式はstatistics層だけが所有する。解析サービスは統計式を再実装しない。
 
 ## 失敗と例外境界
 
@@ -64,7 +64,7 @@ validationの点集合、姿勢算出規約、画質評価前処理と初期閾�
 | feature extraction | 必須点欠損、非有限値、0または不正分母 | `FeatureExtractionError` を保持 |
 | statistics | 不正参照群、数値計算失敗、参照モデル不整合 | `ModelError` を保持。参照データ読込エラーは統計境界で扱われる |
 
-下位層の具体的例外は原因として調査可能にしつつ、Web層が内部モジュール全体の例外一覧を把握しなくて済む解析失敗境界を置く。各下位例外の無差別な握りつぶしや、HTTP例外への変換はしない。想定外の障害は成功結果へ変換せず、内部詳細は画面に露出しない。個々のサービス例外名やコード体系は実装時TODOであり、巨大な例外継承階層は要求しない。
+下位層の具体的例外は原因として調査可能にしつつ、Web層が内部モジュール全体の例外一覧を把握しなくて済む解析失敗境界を置く。各下位例外の無差別な握りつぶしや、HTTP例外への変換はしない。想定外の障害は成功結果へ変換せず、内部詳細は画面に露出しない。サービスは原因コードと失敗チェックを持つ例外を返す。
 
 ## データの寿命
 
@@ -79,9 +79,16 @@ POST /analyze
   → Web入力検証
   → analysis service（bytes、reference_group）
   → 型付き解析結果
-  → result_view
-  → Jinja2
+  → JSON応答
 ```
 
 解析サービスはFastAPIから独立する。HTTP入力の検証・ステータス決定・テンプレートへの表示変換はWeb層の責務である。サービス結果や失敗情報をWeb層が `result_view` に変換してから描画する。
 
+
+## HTTP APIと実行時の契約
+
+`POST /analyze` は `multipart/form-data` の `image`（JPEGまたはPNGのファイル）と `reference_group`（文字列）を必須とし、成功時に内部成功結果をJSONで返す。生ランドマークは返さない。画像はメモリ内でのみ受信し、本文上限は画像上限20 MiBにフォームの余裕64 KiBを加えた値とする。フォームの重複・不正な構造、必須項目の欠落は `400 invalid_request`、未知の参照群は `400 invalid_reference_group`、画像の形式・デコード不正は `400 invalid_image`、入力サイズ・寸法制限違反は `413 image_size_limit` とする。
+
+顔なし、複数顔、その他の品質不合格はそれぞれ `422 no_face`、`422 multiple_faces`、`422 validation_failed` とし、失敗したチェック名と理由を `checks` に返す。顔数を最優先し、その他は実行順に並べる。モデルのロード失敗は `503 model_unavailable`、その他の内部解析失敗は `500 analysis_error` とし、内部詳細を返さない。エラーは `{"error":{"code":...,"message":...,"checks":[...]}}` の形とし、チェックがない場合は空配列とする。ブラウザーからのクロスオリジン送信はOriginを同一オリジンに制限する。認証やCookieを用いないAPIであり、Originのない非ブラウザクライアントも受け付ける。
+
+Landmarkerはアプリケーション単位で遅延ロードし、ロックで推論を直列化して再利用する。終了時に閉じる。アルゴリズム版は初期値 `1` とする。

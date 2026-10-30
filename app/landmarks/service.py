@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from threading import Lock
 from typing import Any, Callable
 
 import numpy as np
@@ -25,20 +26,25 @@ class FaceLandmarkerService:
     def __init__(self, model_path: str | Path, landmarker_factory: Callable[..., Any] | None = None) -> None:
         self.model_path = Path(model_path)
         self._landmarker_factory = landmarker_factory
+        self._task = None
+        self._lock = Lock()
 
     def analyze(self, image: DecodedImage) -> LandmarkResult:
-        if not self.model_path.is_file():
-            raise LandmarkModelError("Face Landmarker model is missing")
+        with self._lock:
+            if self._task is None:
+                if not self.model_path.is_file():
+                    raise LandmarkModelError("Face Landmarker model is missing")
+                try:
+                    self._task = self._create_landmarker()
+                except Exception as exc:
+                    raise LandmarkModelError("Face Landmarker model could not be loaded") from exc
+            try:
+                import mediapipe as mp
+                mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=image.rgb)
+                raw = self._task.detect(mp_image)
+            except Exception as exc:
+                raise LandmarkAnalysisError("Face Landmarker analysis failed") from exc
         try:
-            landmarker = self._create_landmarker()
-        except Exception as exc:
-            raise LandmarkModelError("Face Landmarker model could not be loaded") from exc
-        try:
-            import mediapipe as mp
-
-            mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=image.rgb)
-            with landmarker as task:
-                raw = task.detect(mp_image)
             raw_faces = raw.face_landmarks or []
             raw_matrices = raw.facial_transformation_matrixes or []
             faces = tuple(tuple(FaceLandmark(float(p.x), float(p.y), float(p.z)) for p in face) for face in raw_faces)
@@ -51,6 +57,13 @@ class FaceLandmarkerService:
             return LandmarkResult(image.width, image.height, len(faces), faces, matrices)
         except Exception as exc:
             raise LandmarkAnalysisError("Face Landmarker analysis failed") from exc
+
+    def close(self) -> None:
+        with self._lock:
+            if self._task is not None:
+                task, self._task = self._task, None
+                if hasattr(task, "close"):
+                    task.close()
 
     def _create_landmarker(self) -> Any:
         if self._landmarker_factory is not None:
