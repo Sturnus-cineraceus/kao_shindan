@@ -15,9 +15,6 @@ Thumbs.db
 uploads/
 images/
 tmp/
-*.jpg
-*.jpeg
-*.png
 *.webp
 *.heic
 *.task
