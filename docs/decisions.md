@@ -38,13 +38,13 @@
 | --- | --- | --- |
 | 参照数値 | 転記済みCSVから4群×4寸法のJSONを生成する。形式と検証は参照データの設計に従う | dataset |
 | SDKとモデル | 解決：MediaPipe `0.10.21` と公式Face Landmarker float16版1を固定。チェックサム検証と実モデル推論テストを追加 | image-analysis |
-| 姿勢規約 | 要検証：軸、回転順序、符号、鏡像を固定する | validation |
-| 品質に使う点 | TODO：閉眼点、必須点集合、Face Oval構成を固定する | validation |
-| 画像端の2% | 暫定案を既知画像で確認し規約を確定する | validation |
-| 画質の前処理 | 要検証：範囲、縮小、輝度変換、Laplacian条件を固定する | validation |
+| 姿勢規約 | 確定：MediaPipe canonical-to-runtime行列とZYX Euler規約。実画像でSDK出力との軸・符号対応を確認 | validation |
+| 品質に使う点 | 解決：閉眼点、必須点集合、Face Oval点集合を確定 | validation |
+| 画像端の2% | 解決：正規化座標で必須点にx/y各2%条件を適用。境界値は拒否しない | validation |
+| 画質の前処理 | 解決：画像全体、長辺512px以下へ縮小、RGBグレースケール、Laplacian条件を確定。閾値調整は実画像検証 | validation |
 | デコードと座標 | JPEG／PNG、EXIF Orientation適用、RGB化、透過PNGはRGB変換時に背景合成せずアルファを破棄する。安全な画像上限を設定 | image-analysis、non-functional-requirements |
 | 資源上限 | TODO：バイト数、解像度、総ピクセル数、時間、並列数を有界にする | non-functional-requirements |
-| 数値安定性 | 要検証：最小分母、行列の不安定判定、許容誤差を決める | validation、statistics |
+| 数値安定性 | validation行列の直交性許容誤差とsingularity条件は確定。統計共分散の条件数閾値・数値誤差許容幅は要検証。外眼角幅の追加下限はMVPに設けない | validation、statistics |
 | 結果とエラー型 | 内部成功結果の項目とエラー責務の分類は定義済み。具体的なPython型、サービス例外名、理由コードと表示順、HTTPステータスはTODO | analysis-service、validation |
 | 安全性と復旧方式 | TODO：CSRF、ヘッダ、一時領域回収、推論停止方式を決める | non-functional-requirements |
 

@@ -27,7 +27,7 @@ validationが成功するまでfeature extractionとstatisticsを呼ばない。
 
 validationはLandmarkResultとDecodedImageの寸法・画素を使って、解析可否と品質チェック結果を判定する。解析サービスは判定結果を制御フローに反映し、失敗したチェックをWeb層へ渡せる形で保持する。チェック対象は顔数、顔サイズ、画像端への接触・近接、頭部姿勢、目、口、ぼけ、露出である。具体的な定義と既存の初期値は[validation.md](validation.md)を参照する。
 
-既存文書で未確定の点集合、姿勢算出規約、画質評価詳細、閾値等はTODOのまま維持する。今回、閾値や失敗理由コード、複数不合格時の優先順を新たに決めない。validationが失敗した場合は失敗コード等を含むvalidation結果を保持して処理を打ち切り、成功結果型やスコアを生成しない。
+validationの点集合、姿勢算出規約、画質評価前処理と初期閾値は[validation.md](validation.md)を正本とする。失敗理由コードと複数不合格時の優先順は実装時に定める。validationが失敗した場合は失敗チェックを含むvalidation結果を保持して処理を打ち切り、成功結果型やスコアを生成しない。
 
 ## 成功結果
 
