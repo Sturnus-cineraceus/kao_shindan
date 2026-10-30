@@ -49,14 +49,17 @@ def extract_measurements(
         y1 = _finite_coordinate(first.y, f"landmark {first_index}.y")
         x2 = _finite_coordinate(second.x, f"landmark {second_index}.x")
         y2 = _finite_coordinate(second.y, f"landmark {second_index}.y")
-        dx = (x2 - x1) * image_width
-        dy = (y2 - y1) * image_height
-        distance = math.hypot(dx, dy)
+        distance = pixel_distance(x1, y1, x2, y2, image_width, image_height)
         if not math.isfinite(distance):
             raise FeatureExtractionError(f"{name} is not finite")
         values[name] = distance
 
     return FaceMeasurements(**values)
+
+
+def pixel_distance(x1: float, y1: float, x2: float, y2: float, width: int, height: int) -> float:
+    """Calculate a 2D distance in image pixels from normalized coordinates."""
+    return math.hypot((x2 - x1) * width, (y2 - y1) * height)
 
 
 def build_features(measurements: FaceMeasurements) -> FaceFeatures:
