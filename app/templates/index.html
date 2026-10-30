@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>kao_cal</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <script src="/static/app.js" defer></script>
+</head>
+<body>
+<main>
+  <h1>kao_cal</h1>
+  <p>顔形態の統計的な平均への近さを示す試作指標です。普遍的・客観的な美醜を判定するものではありません。</p>
+  <form id="analysis-form">
+    <label for="image">顔画像（JPEG / PNG）</label>
+    <input id="image" name="image" type="file" accept="image/jpeg,image/png" required>
+    <label for="reference-group">比較する参照集団</label>
+    <select id="reference-group" name="reference_group" required>
+      <option value="" selected disabled>参照集団を選択してください</option>
+      <option value="young_male">青年男性（18〜34歳）</option>
+      <option value="young_female">青年女性（18〜34歳）</option>
+      <option value="older_male">高齢男性（60〜84歳）</option>
+      <option value="older_female">高齢女性（60〜84歳）</option>
+    </select>
+    <button type="submit">解析する</button>
+  </form>
+  <p id="status" role="status" aria-live="polite"></p>
+  <p id="error" role="alert" hidden></p>
+  <section id="result" aria-labelledby="result-title" hidden>
+    <h2 id="result-title">解析結果</h2>
+    <p>平均顔近似スコア</p>
+    <p class="score" id="score"></p>
+    <p>参照集団：<span id="result-group"></span></p>
+    <p>100に近いほど、この参照集団の平均的な顔形態に近いことを示します。</p>
+    <p id="notice"></p>
+  </section>
+  <noscript>解析にはJavaScriptを有効にしてください。</noscript>
+</main>
+</body>
+</html>

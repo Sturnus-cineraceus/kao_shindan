@@ -14,7 +14,7 @@
 - 顔数、必須点、顔サイズ、画像端、姿勢、目・口、画質のvalidation
 - 参照統計データの読み込みと統計比較コア
 
-`POST /analyze` は multipart/form-data の `image` と `reference_group` を受け取り、解析結果またはエラーをJSONで返します。詳細は[解析サービス](docs/analysis-service.md)を参照してください。Webアップロード画面、結果画面、ランドマーク描画は未実装です。
+`POST /analyze` は multipart/form-data の `image` と `reference_group` を受け取り、解析結果またはエラーをJSONで返します。詳細は[解析サービス](docs/analysis-service.md)を参照してください。ブラウザから画像を選択して解析し、スコアを確認できます。ランドマーク描画は未実装です。
 
 ## Face Landmarkerモデル
 
@@ -38,7 +38,7 @@ docker compose build
 docker compose up
 ```
 
-ブラウザで http://localhost:8000/ を開きます。ソース変更時にはUvicornが再読み込みします。停止は次のコマンドです。
+ブラウザで http://localhost:8000/ を開き、JPEGまたはPNG画像と比較する参照集団を選択して「解析する」を押すと、平均顔近似スコアが表示されます。画像は永続保存されません。ソース変更時にはUvicornが再読み込みします。停止は次のコマンドです。
 
 ```sh
 docker compose down

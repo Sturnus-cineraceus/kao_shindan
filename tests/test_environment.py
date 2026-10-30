@@ -6,7 +6,8 @@ from app.main import app
 def test_root() -> None:
     response = TestClient(app).get("/")
     assert response.status_code == 200
-    assert response.text == "kao_cal is running"
+    assert response.headers['content-type'].startswith('text/html')
+    assert 'kao_cal' in response.text
 
 
 def test_scientific_dependencies_are_available() -> None:

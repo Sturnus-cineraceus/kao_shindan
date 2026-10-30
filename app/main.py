@@ -6,7 +6,10 @@ import os
 from urllib.parse import urlsplit
 
 from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse, PlainTextResponse
+from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
+from pathlib import Path
 from starlette.concurrency import run_in_threadpool
 
 from app.analysis import AnalysisError, AnalysisService
@@ -25,11 +28,14 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(lifespan=lifespan)
+web_dir = Path(__file__).resolve().parent
+app.mount('/static', StaticFiles(directory=web_dir / 'static'), name='static')
+templates = Jinja2Templates(directory=web_dir / 'templates')
 
 
-@app.get('/', response_class=PlainTextResponse)
-def index() -> str:
-    return 'kao_cal is running'
+@app.get('/')
+def index(request: Request):
+    return templates.TemplateResponse(request=request, name='index.html', headers={'Cache-Control': 'no-store'})
 
 
 def error(code: str, status: int, checks=()):
