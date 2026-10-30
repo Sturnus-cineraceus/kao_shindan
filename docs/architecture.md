@@ -15,13 +15,14 @@
 | MediaPipe Face Landmarker | 顔検出、ランドマーク、変換行列 |
 | NumPy | ベクトルと行列の演算 |
 | SciPy | 統計分布、距離計算の数値処理 |
-| OpenCV | デコード後の画像変換と画質評価 |
+| Pillow / NumPy | 安全な画像デコード、EXIF Orientation適用、RGB画素と寸法 |
+| OpenCV | 画質評価など、後続の画像処理 |
 | Docker | Pythonと依存ライブラリを含む再現可能な実行環境 |
 | docker compose | MVPのローカル起動と環境構成 |
 
 React等のSPAはMVPでは採用しない。
 ホストへのPythonやMediaPipeの直接インストールを前提とせず、コンテナ内で管理する。
-Dockerfileとcomposeによる環境を実装時に用意するが、現時点では未実装である。
+Dockerfileとcomposeによる環境を用意し、Face Landmarkerモデルはbuild時に取得して固定チェックサムを検証する。
 本番インフラ、公開URL、ワーカー数はTODOとする。
 
 ## 責務と依存方向
@@ -31,7 +32,7 @@ Dockerfileとcomposeによる環境を実装時に用意するが、現時点で
 | `web` | HTTP、フォーム、Jinja2、`result_view` | 入力画像と参照群、表示用結果 |
 | 解析サービス | 各工程の順序、失敗処理、画像寿命の管理 | 解析要求と型付き結果 |
 | `image_processing` | 安全なデコード、EXIF除去、色変換、縮小 | 画像配列と実寸法 |
-| `landmarks` | `face_landmarks` としてMediaPipe実行 | 顔別ランドマークと行列 |
+| `landmarks` | MediaPipe Face Landmarkerの生成・実行、SDK型の変換 | 内部型の顔別ランドマークと変換行列 |
 | `feature_extraction` | `measurements` の距離計算、`features` の比率生成 | 固定順の3次元特徴ベクトル |
 | `validation` | `image_validation`、`pose_validation`、顔数、品質 | 判定コードと理由、品質結果 |
 | `reference_data` | 公開統計量の読込み、出典と版の管理 | 群別の参照値、参照モデル |
@@ -43,7 +44,7 @@ Dockerfileとcomposeによる環境を実装時に用意するが、現時点で
 `statistics` は画像、MediaPipe型、HTTP、Jinja2を受け取らず、数値と参照モデルだけで動くようにする。
 距離計算、比率、統計式、閾値判定は副作用のない関数としてテスト可能にする。
 
-モデルのロードと再利用、同時実行時のMediaPipeインスタンス管理は要検証である。
+モデルのロードと再利用、同時実行時のMediaPipeインスタンス管理は要検証である。現段階では解析ごとにインスタンスを生成して閉じる。
 スレッド安全性を仮定せず、[資源制限](non-functional-requirements.md)と合わせて実装方式を決める。
 
 ## 統計モデルの交換境界

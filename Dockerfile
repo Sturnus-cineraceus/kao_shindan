@@ -7,6 +7,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends libgl1 libglib2
     && rm -rf /var/lib/apt/lists/*
 COPY requirements.txt constraints.txt ./
 RUN pip install --no-cache-dir -r requirements.txt -c constraints.txt
+COPY scripts/download_face_landmarker.py /tmp/download_face_landmarker.py
+ENV FACE_LANDMARKER_MODEL_PATH=/opt/kao-cal/models/face_landmarker.task
+RUN python /tmp/download_face_landmarker.py && rm /tmp/download_face_landmarker.py
 COPY app ./app
 COPY scripts ./scripts
 COPY tests ./tests

@@ -36,12 +36,12 @@
 | 項目 | 状態と解決方法 | 詳細 |
 | --- | --- | --- |
 | 参照数値 | 転記済みCSVから4群×4寸法のJSONを生成する。形式と検証は参照データの設計に従う | dataset |
-| SDKとモデル | 要検証：対応バージョン、iris点、行列、confidenceを確認する | image-analysis、validation |
+| SDKとモデル | 解決：MediaPipe `0.10.21` と公式Face Landmarker float16版1を固定。チェックサム検証と実モデル推論テストを追加 | image-analysis |
 | 姿勢規約 | 要検証：軸、回転順序、符号、鏡像を固定する | validation |
 | 品質に使う点 | TODO：閉眼点、必須点集合、Face Oval構成を固定する | validation |
 | 画像端の2% | 暫定案を既知画像で確認し規約を確定する | validation |
 | 画質の前処理 | 要検証：範囲、縮小、輝度変換、Laplacian条件を固定する | validation |
-| デコードと座標 | TODO：許可形式、EXIF Orientation、透過、色と縮小条件を固定する | image-analysis、non-functional-requirements |
+| デコードと座標 | JPEG／PNG、EXIF Orientation適用、RGB化、透過PNGはRGB変換時に背景合成せずアルファを破棄する。安全な画像上限を設定 | image-analysis、non-functional-requirements |
 | 資源上限 | TODO：バイト数、解像度、総ピクセル数、時間、並列数を有界にする | non-functional-requirements |
 | 数値安定性 | 要検証：最小分母、行列の不安定判定、許容誤差を決める | validation、statistics |
 | 結果とエラー型 | TODO：型、HTTPステータス、理由コードと表示順を決める | architecture、validation |

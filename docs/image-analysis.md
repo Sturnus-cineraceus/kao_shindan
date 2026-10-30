@@ -5,8 +5,10 @@
 
 ## MediaPipe Face Landmarker
 
-静止画像モードを使用し、iris中心を含むランドマーク構成のモデルを選ぶ。
-モデルの実体とバージョンを固定し、468と473を取得できることを検証する。
+静止画像モードを使用する。公式配布のFace Landmarker float16、モデルディレクトリ版 `1` を採用する。
+識別子は `face_landmarker/face_landmarker/float16/1/face_landmarker.task`、モデルURLは[公式配布物](https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task)である。
+Docker build時に `/opt/kao-cal/models/face_landmarker.task` へ取得し、SHA-256 `64184e229b263107bc2b804c6625db1341ff2bb731874b0bcc2fe6544e0bc9ff` を確認する。取得処理は `scripts/download_face_landmarker.py` に置き、モデル本体はGit管理しない。
+採用モデルは478点を含む構成で、468と473を含む必須点集合を内部型に保持する。
 初期設定は次とする。
 
 | 設定 | 値 | 目的 |
@@ -20,7 +22,7 @@
 `num_faces` は検出上限であり、2顔を検出したら複数人として拒否する。
 画像中の顔数を無制限に数える仕様ではない。
 Python SDKの設定名と動作は[公式ガイド](https://developers.google.com/edge/mediapipe/solutions/vision/face_landmarker/python)で確認する。
-具体的なPython、SDK、モデルの組合せはTODOとし、実装時に互換性を確認して固定する。
+Pythonは3.12.9、MediaPipe Python SDKは `0.10.21` に固定する。モデルの実推論スモークテストと変換アダプターの単体テストを行う。
 
 ## 人類学的計測点との対応
 
