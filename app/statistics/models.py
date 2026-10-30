@@ -13,6 +13,7 @@ from app.reference_data import MEASUREMENT_KEYS, ReferenceData, ReferenceDataErr
 
 FloatArray = NDArray[np.float64]
 MODEL_MODE = "summary_delta"
+# 共分散行列が正定値でない場合の対角正則化係数（docs/statistics.md の初期値）。
 EPSILON = 1e-6
 FEATURE_KEYS = (
     "interpupillary_breadth_ratio",
@@ -160,6 +161,7 @@ def compare_features(
     if not np.isfinite(d_squared):
         raise ModelError("Distance calculation produced a non-finite value")
     if d_squared < 0:
+        # 浮動小数点誤差で生じた微小な負値だけをゼロへ丸める許容幅。
         tolerance = 1e-12 * max(1.0, float(np.linalg.norm(delta) ** 2))
         if d_squared < -tolerance:
             raise ModelError("Distance squared is materially negative")

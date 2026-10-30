@@ -14,6 +14,8 @@ class FeatureExtractionError(ValueError):
     """Invalid landmarks, dimensions, or derived measurements/features."""
 
 
+# MediaPipe Face Landmarker の対応点。各ペアの pixel distance が
+# statistics に渡す4計測値となり、外眼角間幅は後段の比率の共通分母になる。
 _MEASUREMENT_PAIRS = (
     ("interpupillary_breadth", 468, 473),
     ("interocular_breadth", 133, 362),
