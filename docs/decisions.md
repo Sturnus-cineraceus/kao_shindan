@@ -23,6 +23,7 @@
 | 品質閾値をすべて未決定とする | 初期値を設定として採用し最終値は検証 | validation |
 | ランドマークをすべて未確定とする | 採用点を定義 | image-analysis |
 | 正規化座標を尺度の区別なく距離へ使える表現 | 幅と高さを戻してピクセル距離を計算 | image-analysis |
+| 解析サービスの処理順、内部結果、画像寿命を未定義のままにする | 解析サービス契約を定義し、同文書を正本とする | analysis-service |
 
 個票必須、個票比率分布必須、Ledoit-Wolf必須、経験分布スコア必須という記述は、調査した旧Git文書にはなかった。
 これらを新たなMVP条件として導入せず、個票による精密化を将来の交換モデルに限定した。
@@ -44,7 +45,7 @@
 | デコードと座標 | JPEG／PNG、EXIF Orientation適用、RGB化、透過PNGはRGB変換時に背景合成せずアルファを破棄する。安全な画像上限を設定 | image-analysis、non-functional-requirements |
 | 資源上限 | TODO：バイト数、解像度、総ピクセル数、時間、並列数を有界にする | non-functional-requirements |
 | 数値安定性 | 要検証：最小分母、行列の不安定判定、許容誤差を決める | validation、statistics |
-| 結果とエラー型 | TODO：型、HTTPステータス、理由コードと表示順を決める | architecture、validation |
+| 結果とエラー型 | 内部成功結果の項目とエラー責務の分類は定義済み。具体的なPython型、サービス例外名、理由コードと表示順、HTTPステータスはTODO | analysis-service、validation |
 | 安全性と復旧方式 | TODO：CSRF、ヘッダ、一時領域回収、推論停止方式を決める | non-functional-requirements |
 
 ## 検証後または公開前に決める事項

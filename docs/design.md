@@ -43,6 +43,7 @@ MVPの基本画面は入力画面と結果画面の2つである。
 | 特徴ベクトル、数式、モデル差し替え | [statistics.md](statistics.md) |
 | 参照群、出典、静的データの保持 | [dataset.md](dataset.md) |
 | HTTP、内部結果、モジュール境界 | [architecture.md](architecture.md) |
+| 解析サービスの入力、処理順、結果、失敗境界 | [analysis-service.md](analysis-service.md) |
 | 画像寿命、資源制限、安全性、運用 | [non-functional-requirements.md](non-functional-requirements.md) |
 | 検証方法、MVP完了条件 | [testing.md](testing.md) |
 
