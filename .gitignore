@@ -18,3 +18,5 @@ tmp/
 *.webp
 *.heic
 *.task
+
+!tests/fixtures/portrait_female_young_adult_01.png

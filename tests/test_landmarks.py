@@ -5,7 +5,7 @@ import numpy as np
 import pytest
 from PIL import Image
 
-from app.image_processing import DecodedImage
+from app.image_processing import DecodedImage, decode_image
 from app.landmarks import FaceLandmarkerService, LandmarkAnalysisError, LandmarkModelError
 
 
@@ -74,3 +74,24 @@ def test_real_model_image_mode_smoke(tmp_path: Path) -> None:
     result = FaceLandmarkerService(model_path).analyze(DecodedImage(pixels, 128, 128))
     assert result.face_count == 0
     assert result.faces == ()
+
+
+def test_real_model_detects_portrait_fixture() -> None:
+    model_path = Path("/opt/kao-cal/models/face_landmarker.task")
+    if not model_path.is_file():
+        pytest.skip("Model asset is provisioned by the Docker image")
+
+    fixture_path = Path(__file__).parent / "fixtures" / "portrait_female_young_adult_01.png"
+    decoded = decode_image(fixture_path.read_bytes())
+    assert decoded.width > 0
+    assert decoded.height > 0
+    assert decoded.rgb.shape == (decoded.height, decoded.width, 3)
+
+    result = FaceLandmarkerService(model_path).analyze(decoded)
+    assert result.face_count == 1
+    face = result.faces[0]
+    assert len(face) == 478
+    # Exercise the indices used by feature extraction and validation.
+    for index in (33, 61, 133, 263, 291, 362, 468, 473):
+        point = face[index]
+        assert np.isfinite((point.x, point.y, point.z)).all()
