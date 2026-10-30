@@ -1,0 +1,5 @@
+﻿measurement_id,measurement_name_ja,measurement_name_en,unit,reference_group,group_name_ja,group_name_en,n,mean,sd,p1,p5,p50,p95,p99,source_page
+17,鼻高（セリオンから）,Nose height (sellion to subnasale),mm,older_male,高齢群男性,Older Male,100,56.2,3.4,50,51,56,62,63,https://www.airc.aist.go.jp/dhrt/head/
+17,鼻高（セリオンから）,Nose height (sellion to subnasale),mm,older_female,高齢群女性,Older Female,100,51.9,3.1,44,47,52,57,58,https://www.airc.aist.go.jp/dhrt/head/
+17,鼻高（セリオンから）,Nose height (sellion to subnasale),mm,young_male,青年群男性,Young Adult Male,56,53.0,3.3,45,48,53,59,59,https://www.airc.aist.go.jp/dhrt/head/
+17,鼻高（セリオンから）,Nose height (sellion to subnasale),mm,young_female,青年群女性,Young Adult Female,61,50.3,2.9,45,46,50,57,57,https://www.airc.aist.go.jp/dhrt/head/

@@ -1,0 +1,5 @@
+﻿measurement_id,measurement_name_ja,measurement_name_en,unit,reference_group,group_name_ja,group_name_en,n,mean,sd,p1,p5,p50,p95,p99,source_page
+14,外眼角幅,Biectocanthion breadth,mm,older_male,高齢群男性,Older Male,100,91.1,3.9,82,85,92,96,100,https://www.airc.aist.go.jp/dhrt/head/
+14,外眼角幅,Biectocanthion breadth,mm,older_female,高齢群女性,Older Female,100,87.3,3.5,80,83,87,93,95,https://www.airc.aist.go.jp/dhrt/head/
+14,外眼角幅,Biectocanthion breadth,mm,young_male,青年群男性,Young Adult Male,56,93.6,3.7,87,87,94,100,101,https://www.airc.aist.go.jp/dhrt/head/
+14,外眼角幅,Biectocanthion breadth,mm,young_female,青年群女性,Young Adult Female,61,90.0,3.5,84,85,90,97,98,https://www.airc.aist.go.jp/dhrt/head/

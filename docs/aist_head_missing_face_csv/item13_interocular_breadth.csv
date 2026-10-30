@@ -1,0 +1,5 @@
+﻿measurement_id,measurement_name_ja,measurement_name_en,unit,reference_group,group_name_ja,group_name_en,n,mean,sd,p1,p5,p50,p95,p99,source_page
+13,内眼角幅,Interocular breadth,mm,older_male,高齢群男性,Older Male,100,36.6,3.2,31,32,36,42,45,https://www.airc.aist.go.jp/dhrt/head/
+13,内眼角幅,Interocular breadth,mm,older_female,高齢群女性,Older Female,100,34.7,2.4,29,30,35,39,39,https://www.airc.aist.go.jp/dhrt/head/
+13,内眼角幅,Interocular breadth,mm,young_male,青年群男性,Young Adult Male,56,36.6,2.9,29,32,36,41,42,https://www.airc.aist.go.jp/dhrt/head/
+13,内眼角幅,Interocular breadth,mm,young_female,青年群女性,Young Adult Female,61,36.6,2.6,32,33,36,40,42,https://www.airc.aist.go.jp/dhrt/head/

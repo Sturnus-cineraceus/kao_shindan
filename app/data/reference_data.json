@@ -1,0 +1,121 @@
+{
+  "model_version": "summary_delta_v1",
+  "source": {
+    "title": "日本人頭部寸法データベース2001",
+    "url": "https://www.airc.aist.go.jp/dhrt/head/"
+  },
+  "reference_groups": {
+    "young_male": {
+      "measurements": {
+        "interpupillary_breadth": {
+          "measurement_id": 5,
+          "mean_mm": 64.1,
+          "sd_mm": 3.0,
+          "n": 56
+        },
+        "interocular_breadth": {
+          "measurement_id": 13,
+          "mean_mm": 36.6,
+          "sd_mm": 2.9,
+          "n": 56
+        },
+        "biectocanthion_breadth": {
+          "measurement_id": 14,
+          "mean_mm": 93.6,
+          "sd_mm": 3.7,
+          "n": 56
+        },
+        "mouth_breadth": {
+          "measurement_id": 15,
+          "mean_mm": 49.7,
+          "sd_mm": 3.6,
+          "n": 56
+        }
+      }
+    },
+    "young_female": {
+      "measurements": {
+        "interpupillary_breadth": {
+          "measurement_id": 5,
+          "mean_mm": 61.7,
+          "sd_mm": 2.7,
+          "n": 61
+        },
+        "interocular_breadth": {
+          "measurement_id": 13,
+          "mean_mm": 36.6,
+          "sd_mm": 2.6,
+          "n": 61
+        },
+        "biectocanthion_breadth": {
+          "measurement_id": 14,
+          "mean_mm": 90.0,
+          "sd_mm": 3.5,
+          "n": 61
+        },
+        "mouth_breadth": {
+          "measurement_id": 15,
+          "mean_mm": 45.8,
+          "sd_mm": 3.1,
+          "n": 61
+        }
+      }
+    },
+    "older_male": {
+      "measurements": {
+        "interpupillary_breadth": {
+          "measurement_id": 5,
+          "mean_mm": 64.4,
+          "sd_mm": 3.0,
+          "n": 100
+        },
+        "interocular_breadth": {
+          "measurement_id": 13,
+          "mean_mm": 36.6,
+          "sd_mm": 3.2,
+          "n": 100
+        },
+        "biectocanthion_breadth": {
+          "measurement_id": 14,
+          "mean_mm": 91.1,
+          "sd_mm": 3.9,
+          "n": 100
+        },
+        "mouth_breadth": {
+          "measurement_id": 15,
+          "mean_mm": 55.8,
+          "sd_mm": 4.2,
+          "n": 100
+        }
+      }
+    },
+    "older_female": {
+      "measurements": {
+        "interpupillary_breadth": {
+          "measurement_id": 5,
+          "mean_mm": 61.1,
+          "sd_mm": 2.6,
+          "n": 100
+        },
+        "interocular_breadth": {
+          "measurement_id": 13,
+          "mean_mm": 34.7,
+          "sd_mm": 2.4,
+          "n": 100
+        },
+        "biectocanthion_breadth": {
+          "measurement_id": 14,
+          "mean_mm": 87.3,
+          "sd_mm": 3.5,
+          "n": 100
+        },
+        "mouth_breadth": {
+          "measurement_id": 15,
+          "mean_mm": 51.3,
+          "sd_mm": 3.4,
+          "n": 100
+        }
+      }
+    }
+  }
+}

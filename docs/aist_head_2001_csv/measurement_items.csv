@@ -1,0 +1,19 @@
+﻿measurement_id,measurement_name_ja,measurement_name_en,instrument,source_url
+1,身長,Body height,アントロポメータ,https://www.airc.aist.go.jp/dhrt/head/
+2,体重,Body mass (Weight),デジタル体重計,https://www.airc.aist.go.jp/dhrt/head/
+3,後頭・鼻尖距離,Occiput to pronasale distance,桿状計,https://www.airc.aist.go.jp/dhrt/head/
+4,全頭高,Total head height,桿状計,https://www.airc.aist.go.jp/dhrt/head/
+5,瞳孔間幅,Interpupillary breadth,瞳孔距離計,https://www.airc.aist.go.jp/dhrt/head/
+6,頭囲,Head circumference,巻尺,https://www.airc.aist.go.jp/dhrt/head/
+7,頭長,Head length,触角計,https://www.airc.aist.go.jp/dhrt/head/
+8,頭幅,Head breadth,触角計,https://www.airc.aist.go.jp/dhrt/head/
+9,頬弓幅,Bizygomatic breadth,触角計,https://www.airc.aist.go.jp/dhrt/head/
+10,下顎角幅,Bigonial breadth,触角計,https://www.airc.aist.go.jp/dhrt/head/
+11,耳珠間幅,Bitragion breadth,触角計,https://www.airc.aist.go.jp/dhrt/head/
+12,乳様突起間幅,Bimastoidal breadth,触角計,https://www.airc.aist.go.jp/dhrt/head/
+13,内眼角幅,Interocular breadth,滑動計,https://www.airc.aist.go.jp/dhrt/head/
+14,外眼角幅,Biectocanthion breadth,滑動計,https://www.airc.aist.go.jp/dhrt/head/
+15,口裂幅,Mouth breadth,滑動計,https://www.airc.aist.go.jp/dhrt/head/
+16,形態学顔高（セリオンから）,Morphologic face height (sellion to gnathion),滑動計,https://www.airc.aist.go.jp/dhrt/head/
+17,鼻高（セリオンから）,Nose height (sellion to subnasale),滑動計,https://www.airc.aist.go.jp/dhrt/head/
+18,鼻下・オトガイ距離,Subnasale to gnathion,滑動計,https://www.airc.aist.go.jp/dhrt/head/

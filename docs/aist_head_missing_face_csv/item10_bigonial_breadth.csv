@@ -1,0 +1,5 @@
+﻿measurement_id,measurement_name_ja,measurement_name_en,unit,reference_group,group_name_ja,group_name_en,n,mean,sd,p1,p5,p50,p95,p99,source_page
+10,下顎角幅,Bigonial breadth,mm,older_male,高齢群男性,Older Male,100,114.5,5.7,102,104,115,123,128,https://www.airc.aist.go.jp/dhrt/head/
+10,下顎角幅,Bigonial breadth,mm,older_female,高齢群女性,Older Female,100,107.9,5.7,96,98,108,116,119,https://www.airc.aist.go.jp/dhrt/head/
+10,下顎角幅,Bigonial breadth,mm,young_male,青年群男性,Young Adult Male,56,109.6,5.0,99,101,110,118,120,https://www.airc.aist.go.jp/dhrt/head/
+10,下顎角幅,Bigonial breadth,mm,young_female,青年群女性,Young Adult Female,61,102.5,4.5,91,96,103,110,111,https://www.airc.aist.go.jp/dhrt/head/

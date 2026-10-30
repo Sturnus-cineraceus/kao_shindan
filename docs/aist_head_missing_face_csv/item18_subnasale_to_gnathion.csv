@@ -1,0 +1,5 @@
+﻿measurement_id,measurement_name_ja,measurement_name_en,unit,reference_group,group_name_ja,group_name_en,n,mean,sd,p1,p5,p50,p95,p99,source_page
+18,鼻下・オトガイ距離,Subnasale to gnathion,mm,older_male,高齢群男性,Older Male,98,71.4,4.7,59,63,72,77,80,https://www.airc.aist.go.jp/dhrt/head/
+18,鼻下・オトガイ距離,Subnasale to gnathion,mm,older_female,高齢群女性,Older Female,100,66.5,4.8,52,59,67,73,77,https://www.airc.aist.go.jp/dhrt/head/
+18,鼻下・オトガイ距離,Subnasale to gnathion,mm,young_male,青年群男性,Young Adult Male,56,71.4,5.6,58,64,72,80,83,https://www.airc.aist.go.jp/dhrt/head/
+18,鼻下・オトガイ距離,Subnasale to gnathion,mm,young_female,青年群女性,Young Adult Female,61,67.3,4.5,60,60,67,74,78,https://www.airc.aist.go.jp/dhrt/head/

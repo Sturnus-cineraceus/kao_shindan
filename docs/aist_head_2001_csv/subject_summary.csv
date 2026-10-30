@@ -1,0 +1,17 @@
+﻿reference_group,group_name_ja,measurement_name_en,measurement_name_ja,n,mean,sd,min,max,source_url,note
+older_male,高齢層男性,Age（year）,年齢（年）,100,70.6,4.7,61.3,83.2,https://www.airc.aist.go.jp/dhrt/head/,
+older_male,高齢層男性,Height（cm）,身長（cm）,99,161.6,5.8,148.0,175.5,https://www.airc.aist.go.jp/dhrt/head/,
+older_male,高齢層男性,Weight（kg）,体重（kg）,100,61.2,9.0,39.4,81.0,https://www.airc.aist.go.jp/dhrt/head/,
+older_male,高齢層男性,BMI,BMI,100,23.4,3.0,16.3,31.1,https://www.airc.aist.go.jp/dhrt/head/,
+older_female,高齢層女性,Age（year）,年齢（年）,100,67.9,4.8,60.2,84.7,https://www.airc.aist.go.jp/dhrt/head/,
+older_female,高齢層女性,Height（cm）,身長（cm）,100,149.9,5.3,139.2,165.5,https://www.airc.aist.go.jp/dhrt/head/,
+older_female,高齢層女性,Weight（kg）,体重（kg）,100,52.4,7.7,36.4,74.4,https://www.airc.aist.go.jp/dhrt/head/,
+older_female,高齢層女性,BMI,BMI,100,23.3,3.1,15.2,31.9,https://www.airc.aist.go.jp/dhrt/head/,
+young_male,青年層男性,Age（year）,年齢（年）,56,26.1,4.2,18.2,34.6,https://www.airc.aist.go.jp/dhrt/head/,
+young_male,青年層男性,Height（cm）,身長（cm）,56,169.9,5.9,152.5,185.1,https://www.airc.aist.go.jp/dhrt/head/,
+young_male,青年層男性,Weight（kg）,体重（kg）,56,65.0,11.4,48.4,122.0,https://www.airc.aist.go.jp/dhrt/head/,
+young_male,青年層男性,BMI,BMI,56,22.5,3.7,17.3,42.0,https://www.airc.aist.go.jp/dhrt/head/,
+young_female,青年層女性,Age（year）,年齢（年）,61,25.8,4.6,18.6,34.5,https://www.airc.aist.go.jp/dhrt/head/,
+young_female,青年層女性,Height（cm）,身長（cm）,61,158.5,51.1,148.5,170.8,https://www.airc.aist.go.jp/dhrt/head/,HTML抽出値をそのまま保存。補正していない。
+young_female,青年層女性,Weight（kg）,体重（kg）,61,49.5,6.0,39.8,63.8,https://www.airc.aist.go.jp/dhrt/head/,
+young_female,青年層女性,BMI,BMI,61,19.7,1.9,16.7,25.6,https://www.airc.aist.go.jp/dhrt/head/,

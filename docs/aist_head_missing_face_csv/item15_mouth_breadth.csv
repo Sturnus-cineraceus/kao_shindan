@@ -1,0 +1,5 @@
+﻿measurement_id,measurement_name_ja,measurement_name_en,unit,reference_group,group_name_ja,group_name_en,n,mean,sd,p1,p5,p50,p95,p99,source_page
+15,口裂幅,Mouth breadth,mm,older_male,高齢群男性,Older Male,100,55.8,4.2,47,49,56,61,64,https://www.airc.aist.go.jp/dhrt/head/
+15,口裂幅,Mouth breadth,mm,older_female,高齢群女性,Older Female,100,51.3,3.4,44,45,51,56,58,https://www.airc.aist.go.jp/dhrt/head/
+15,口裂幅,Mouth breadth,mm,young_male,青年群男性,Young Adult Male,56,49.7,3.6,42,46,49,55,59,https://www.airc.aist.go.jp/dhrt/head/
+15,口裂幅,Mouth breadth,mm,young_female,青年群女性,Young Adult Female,61,45.8,3.1,39,41,46,50,52,https://www.airc.aist.go.jp/dhrt/head/

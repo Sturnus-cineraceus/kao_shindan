@@ -1,0 +1,5 @@
+﻿measurement_id,measurement_name_ja,measurement_name_en,unit,reference_group,group_name_ja,group_name_en,n,mean,sd,p1,p5,p50,p95,p99,source_page
+9,頬弓幅,Bizygomatic breadth,mm,older_male,高齢群男性,Older Male,100,146.9,5.2,136,139,147,155,157,https://www.airc.aist.go.jp/dhrt/head/
+9,頬弓幅,Bizygomatic breadth,mm,older_female,高齢群女性,Older Female,100,138.3,4.7,126,131,138,145,149,https://www.airc.aist.go.jp/dhrt/head/
+9,頬弓幅,Bizygomatic breadth,mm,young_male,青年群男性,Young Adult Male,56,145.1,4.4,138,139,145,152,155,https://www.airc.aist.go.jp/dhrt/head/
+9,頬弓幅,Bizygomatic breadth,mm,young_female,青年群女性,Young Adult Female,61,137.7,4.5,130,131,137,145,147,https://www.airc.aist.go.jp/dhrt/head/
