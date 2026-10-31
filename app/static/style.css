@@ -5,6 +5,8 @@ h1 { margin-top: 0; }
 form { display: grid; gap: .6rem; margin-top: 2rem; }
 label { font-weight: bold; margin-top: .5rem; }
 input, select, button { font: inherit; padding: .7rem; max-width: 100%; }
+#image-preview { margin-top: .5rem; }
+#image-preview-image { display: block; max-width: 100%; max-height: 320px; object-fit: contain; }
 button { margin-top: 1rem; background: #245d85; color: white; border: 0; border-radius: 5px; cursor: pointer; }
 button:disabled { opacity: .6; cursor: wait; }
 #error { color: #a02525; }

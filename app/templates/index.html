@@ -14,6 +14,9 @@
   <form id="analysis-form">
     <label for="image">顔画像（JPEG / PNG）</label>
     <input id="image" name="image" type="file" accept="image/jpeg,image/png" required>
+    <div id="image-preview" hidden>
+      <img id="image-preview-image" alt="選択した顔画像のプレビュー">
+    </div>
     <label for="reference-group">比較する参照集団</label>
     <select id="reference-group" name="reference_group" required>
       <option value="" selected disabled>参照集団を選択してください</option>

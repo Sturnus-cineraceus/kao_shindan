@@ -3,6 +3,36 @@ const button = form.querySelector('button');
 const status = document.querySelector('#status');
 const error = document.querySelector('#error');
 const result = document.querySelector('#result');
+const imageInput = form.elements.image;
+const imagePreview = document.querySelector('#image-preview');
+const imagePreviewImage = document.querySelector('#image-preview-image');
+let previewUrl = null;
+
+imageInput.addEventListener('change', () => {
+  if (previewUrl) {
+    URL.revokeObjectURL(previewUrl);
+    previewUrl = null;
+  }
+
+  const file = imageInput.files[0];
+  if (!file) {
+    imagePreviewImage.removeAttribute('src');
+    imagePreview.hidden = true;
+    return;
+  }
+
+  previewUrl = URL.createObjectURL(file);
+  imagePreviewImage.src = previewUrl;
+  imagePreview.hidden = false;
+});
+
+window.addEventListener('pagehide', () => {
+  if (previewUrl) {
+    URL.revokeObjectURL(previewUrl);
+    previewUrl = null;
+  }
+});
+
 const messages = {
   no_face: '顔が検出されませんでした。正面を向いた顔が写る画像を選んでください。',
   multiple_faces: '複数の顔が検出されました。1人だけが写る画像を選んでください。',

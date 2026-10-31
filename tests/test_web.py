@@ -23,6 +23,8 @@ def test_index_form_and_assets():
         parser.feed(response.text)
         inputs = [attrs for tag, attrs in parser.elements if tag == 'input']
         assert any(x.get('name') == 'image' and x.get('type') == 'file' and x.get('accept') == 'image/jpeg,image/png' and 'required' in x for x in inputs)
+        assert any(tag == 'div' and attrs.get('id') == 'image-preview' and 'hidden' in attrs for tag, attrs in parser.elements)
+        assert any(tag == 'img' and attrs.get('id') == 'image-preview-image' for tag, attrs in parser.elements)
         assert any(tag == 'select' and attrs.get('name') == 'reference_group' and 'required' in attrs for tag, attrs in parser.elements)
         assert {attrs.get('value') for tag, attrs in parser.elements if tag == 'option'} >= {'young_male', 'young_female', 'older_male', 'older_female'}
         assert any(tag == 'button' and attrs.get('type') == 'submit' for tag, attrs in parser.elements)
