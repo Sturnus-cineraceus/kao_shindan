@@ -7,6 +7,42 @@ const imageInput = form.elements.image;
 const imagePreview = document.querySelector('#image-preview');
 const imagePreviewImage = document.querySelector('#image-preview-image');
 let previewUrl = null;
+let volumeZoneChart = null;
+const chartContainer = document.querySelector('#volume-zone-chart-container');
+
+function destroyVolumeZoneChart() {
+  if (volumeZoneChart) {
+    volumeZoneChart.destroy();
+    volumeZoneChart = null;
+  }
+  chartContainer.hidden = true;
+}
+
+function showVolumeZoneChart(data) {
+  const points = data.volume_zone_distribution.points.map(point => ({
+    x: point.distance, y: point.relative_density
+  }));
+  const mode = data.volume_zone_distribution.mode_distance;
+  chartContainer.hidden = false;
+  volumeZoneChart = new Chart(document.querySelector('#volume-zone-chart'), {
+    type: 'line',
+    data: { datasets: [
+      { label: '距離分布', data: points, borderColor: '#245d85', pointRadius: 0, borderWidth: 2 },
+      { label: 'この顔', data: [{ x: data.distance, y: 0 }, { x: data.distance, y: data.volume_zone_score }],
+        borderColor: '#bd6038', backgroundColor: '#bd6038', pointRadius: [0, 5], borderWidth: 2 },
+      { label: '最頻距離', data: [{ x: mode, y: 0 }, { x: mode, y: 100 }],
+        borderColor: '#687985', borderDash: [5, 5], pointRadius: 0, borderWidth: 2 }
+    ] },
+    options: {
+      responsive: true, maintainAspectRatio: false, animation: false,
+      scales: {
+        x: { type: 'linear', min: points[0].x, max: points[points.length - 1].x,
+          title: { display: true, text: '平均顔からの距離 D' } },
+        y: { min: 0, max: 100, title: { display: true, text: '相対的な現れやすさ' } }
+      }
+    }
+  });
+}
 
 imageInput.addEventListener('change', () => {
   if (previewUrl) {
@@ -50,6 +86,7 @@ form.addEventListener('submit', async (event) => {
   if (button.disabled) return;
   button.disabled = true;
   result.hidden = true;
+  destroyVolumeZoneChart();
   error.hidden = true;
   status.textContent = '解析中...';
   const groupLabel = form.elements.reference_group.selectedOptions[0].textContent;
@@ -71,6 +108,19 @@ form.addEventListener('submit', async (event) => {
     document.querySelector('#notice').textContent = data.approximation_notice;
     document.querySelector('#quality-warnings').textContent = [...new Set((data.quality_warnings || []).map(warning => warning.message))].join('\n');
     result.hidden = false;
+    try {
+      showVolumeZoneChart(data);
+    } catch (_) {
+      // 数値結果はグラフの描画失敗にかかわらず表示する。
+      chartContainer.hidden = true;
+      try {
+        const existingChart = typeof Chart !== 'undefined' && Chart.getChart('volume-zone-chart');
+        if (existingChart) existingChart.destroy();
+      } catch (_) {
+        // 描画失敗時の後片付けも数値結果の表示を妨げない。
+      }
+      volumeZoneChart = null;
+    }
   } catch (_) {
     error.textContent = '通信または解析に失敗しました。時間をおいて再度お試しください。';
     error.hidden = false;

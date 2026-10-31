@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>kao_cal</title>
   <link rel="stylesheet" href="/static/style.css">
+  <script src="/static/vendor/chart.umd.min.js" defer></script>
   <script src="/static/app.js" defer></script>
 </head>
 <body>
@@ -40,6 +41,10 @@
     <h3>ボリュームゾーン度</h3>
     <p id="volume-zone-score"></p>
     <p>同程度の平均顔距離を持つ顔が近似モデル上どの程度現れやすいかを示します。100付近が最も集まりやすい距離帯です。</p>
+    <p>横軸は平均顔からの距離、縦軸はその距離帯の相対的な現れやすさです。</p>
+    <div id="volume-zone-chart-container" hidden>
+      <canvas id="volume-zone-chart" aria-label="平均顔距離のボリュームゾーン分布" role="img"></canvas>
+    </div>
     <p>参照集団：<span id="result-group"></span></p>
     <p>100に近いほど、この参照集団の平均的な顔形態に近いことを示します。</p>
     <p id="notice"></p>

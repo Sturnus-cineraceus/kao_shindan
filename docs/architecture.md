@@ -12,6 +12,7 @@
 | Jinja2 | サーバーレンダリング |
 | HTML/CSS | 入力フォーム、結果、レスポンシブ表示 |
 | 必要最小限のJavaScript | アップロード補助、結果表示の補助 |
+| Chart.js 4.6.1 | 計算済み分布のCanvas描画。UMD版を自己配信し、実行時にCDNへ依存しない |
 | MediaPipe Face Landmarker | 顔検出、ランドマーク、変換行列 |
 | NumPy | ベクトルと行列の演算 |
 | SciPy | 統計分布、距離計算の数値処理 |

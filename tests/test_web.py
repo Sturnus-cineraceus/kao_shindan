@@ -34,3 +34,30 @@ def test_index_form_and_assets():
         script = client.get('/static/app.js').text
         assert "data.volume_zone_score" in script and "data.distance" in script
         assert client.get('/static/style.css').status_code == 200
+
+
+def test_volume_zone_chart_assets_and_contract():
+    with TestClient(app) as client:
+        html = client.get('/').text
+        parser = FormParser()
+        parser.feed(html)
+        assert any(tag == 'canvas' and attrs.get('id') == 'volume-zone-chart'
+                   and attrs.get('role') == 'img' and attrs.get('aria-label')
+                   for tag, attrs in parser.elements)
+        scripts = [attrs.get('src', '') for tag, attrs in parser.elements if tag == 'script']
+        assert scripts.index('/static/vendor/chart.umd.min.js') < scripts.index('/static/app.js')
+        assert all(src.startswith('/static/') for src in scripts)
+        vendor = client.get('/static/vendor/chart.umd.min.js')
+        assert vendor.status_code == 200
+        assert 'Chart.js v4.6.1' in vendor.text[:200]
+        assert client.get('/static/vendor/Chart.js.LICENSE.md').status_code == 200
+        script = client.get('/static/app.js').text
+        assert 'data.volume_zone_distribution.points.map' in script
+        assert 'x: point.distance, y: point.relative_density' in script
+        assert 'data.volume_zone_distribution.mode_distance' in script
+        assert '{ x: data.distance, y: data.volume_zone_score }' in script
+        assert all(label in script for label in ('距離分布', 'この顔', '最頻距離'))
+        assert 'volumeZoneChart.destroy()' in script
+        assert 'Math.sqrt' not in script and 'chi' not in script.lower()
+        for field in ('score', 'distance', 'volume-zone-score'):
+            assert f"document.querySelector('#{field}').textContent" in script

@@ -10,6 +10,7 @@ input, select, button { font: inherit; padding: .7rem; max-width: 100%; }
 button { margin-top: 1rem; background: #245d85; color: white; border: 0; border-radius: 5px; cursor: pointer; }
 button:disabled { opacity: .6; cursor: wait; }
 #error { color: #a02525; }
+#volume-zone-chart-container { position: relative; height: 300px; width: 100%; }
 #result { border-top: 1px solid #ccd4da; margin-top: 2rem; }
 .score { font-size: 3rem; font-weight: bold; line-height: 1; margin: .5rem 0 1rem; color: #245d85; }
 @media (max-width: 680px) { main { margin: 0; padding: 1.25rem; border-radius: 0; min-height: 100vh; } }
