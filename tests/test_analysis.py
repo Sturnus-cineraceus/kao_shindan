@@ -25,7 +25,7 @@ class StubLandmarker:
 def client(monkeypatch):
     from app.feature_extraction import FaceMeasurements
     import app.analysis as analysis
-    monkeypatch.setattr(analysis, 'validate', lambda *_: ValidationResult((CheckResult('face_count', True),)))
+    monkeypatch.setattr(analysis, 'validate', lambda *_: ValidationResult((CheckResult('face_count', True),), analysis_landmarks=()))
     monkeypatch.setattr(analysis, 'extract_measurements', lambda *_: FaceMeasurements(60, 30, 100, 45))
     with TestClient(app) as client:
         app.state.analysis_service = AnalysisService(StubLandmarker())
@@ -97,22 +97,9 @@ def test_real_pipeline():
         pytest.skip('Model asset is provisioned by the Docker image')
     landmarker = FaceLandmarkerService(MODEL)
     try:
-        image = decode_image(FIXTURE.read_bytes())
-        landmarks = landmarker.analyze(image)
-        assert landmarks.face_count == 1
-        quality = validate(image, landmarks)
-        if not quality.passed:
-            with pytest.raises(AnalysisError) as failure:
-                AnalysisService(landmarker).analyze(FIXTURE.read_bytes(), 'young_female')
-            assert failure.value.code == 'validation_failed'
-        quality = validate(image, landmarks, ValidationConfig(pitch=180, roll=180))
-        assert quality.passed, quality.reasons
-        features = build_features(extract_measurements(landmarks.faces[0], image.width, image.height))
-        assert all(math.isfinite(x) and x > 0 for x in features.as_tuple())
-        from app.statistics import compare_features
-        result = compare_features('young_female', features.as_dict())
-        assert result.reference_group == 'young_female'
-        assert result.reference_model_version and 0 <= result.score <= 100
+        result = AnalysisService(landmarker).analyze(FIXTURE.read_bytes(), 'young_female')
+        assert 0 <= result.score <= 100
+        assert 'HEAD_PITCH_WARNING' in [warning.code for warning in result.quality_warnings]
     finally:
         landmarker.close()
 
@@ -138,3 +125,30 @@ def test_landmarker_reuses_and_closes_model(tmp_path):
     service.analyze(image)
     service.close()
     assert calls == ['created', 'closed']
+
+
+def test_service_passes_corrected_landmarks_to_extraction(monkeypatch):
+    import app.analysis as analysis
+    from app.feature_extraction import FaceMeasurements
+    from app.landmarks import FaceLandmark
+    corrected = (FaceLandmark(.3, .4, 0),)
+    monkeypatch.setattr(analysis, 'validate', lambda *_: ValidationResult((CheckResult('face_count', True),), analysis_landmarks=corrected))
+    received = []
+    def extract(points, width, height):
+        received.append(points)
+        return FaceMeasurements(60, 30, 100, 45)
+    monkeypatch.setattr(analysis, 'extract_measurements', extract)
+    AnalysisService(StubLandmarker()).analyze(FIXTURE.read_bytes(), 'young_female')
+    assert received == [corrected]
+
+
+def test_api_returns_safe_quality_warnings(client, monkeypatch):
+    import app.analysis as analysis
+    from app.validation import QualityWarning
+    warning = QualityWarning('HEAD_PITCH_WARNING', '顔の向きにより計測誤差が増える可能性があります。')
+    monkeypatch.setattr(analysis, 'validate', lambda *_: ValidationResult((CheckResult('pitch', True, value=16.2, threshold=20),), (warning,), ()))
+    response = post(client, FIXTURE.read_bytes())
+    assert response.status_code == 200
+    assert response.json()['quality_warnings'] == [{'code': warning.code, 'message': warning.message}]
+    assert '16.2' not in response.text
+    assert 'analysis_landmarks' not in response.text

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import math
 
 import cv2
@@ -7,10 +8,13 @@ import numpy as np
 
 from app.feature_extraction.service import pixel_distance
 from app.image_processing import DecodedImage
-from app.landmarks import LandmarkResult
+from app.landmarks import FaceLandmark, LandmarkResult
 
 from .config import ValidationConfig
-from .models import CheckResult, ValidationResult
+from .models import CheckResult, QualityWarning, ValidationResult
+
+
+logger = logging.getLogger(__name__)
 
 
 # MediaPipe Face Landmarker の FACEMESH_FACE_OVAL 接続を構成する端点から、
@@ -58,6 +62,20 @@ def _pose(matrix: object, config: ValidationConfig) -> tuple[float, float, float
             math.degrees(math.atan2(r[1, 0], r[0, 0])))
 
 
+def _normalize_roll(points: tuple[FaceLandmark, ...], width: int, height: int, roll: float) -> tuple[FaceLandmark, ...]:
+    """Rotate pixel coordinates around the midpoint of the outer eye corners."""
+    cx = (points[33].x + points[263].x) * width / 2
+    cy = (points[33].y + points[263].y) * height / 2
+    theta = math.radians(-roll)
+    cosine, sine = math.cos(theta), math.sin(theta)
+    result = []
+    for point in points:
+        x, y = point.x * width - cx, point.y * height - cy
+        result.append(FaceLandmark((cx + cosine * x - sine * y) / width,
+                                   (cy + sine * x + cosine * y) / height, point.z))
+    return tuple(result)
+
+
 def _quality(image: DecodedImage, config: ValidationConfig) -> list[CheckResult]:
     rgb = image.rgb
     longest = max(image.width, image.height)
@@ -83,6 +101,8 @@ def _quality(image: DecodedImage, config: ValidationConfig) -> list[CheckResult]
 def validate(image: DecodedImage, landmarks: LandmarkResult, config: ValidationConfig = ValidationConfig()) -> ValidationResult:
     """Return all executable checks; failed prerequisites suppress dependent checks."""
     checks = []
+    warnings = []
+    analysis_points = None
     count = landmarks.face_count
     checks.append(_check("face_count", count == 1, "no_face" if count == 0 else "multiple_faces", float(count)))
     if count == 1:
@@ -90,15 +110,18 @@ def validate(image: DecodedImage, landmarks: LandmarkResult, config: ValidationC
         valid = all(i < len(points) and math.isfinite(points[i].x) and math.isfinite(points[i].y)
                     and 0 <= points[i].x <= 1 and 0 <= points[i].y <= 1 for i in REQUIRED)
         checks.append(_check("required_landmarks", valid, "required_landmark_missing"))
+        matrix = landmarks.facial_transformation_matrices[0] if landmarks.facial_transformation_matrices else None
+        angles = _pose(matrix, config)
         if valid:
-            width = max(points[i].x for i in FACE_OVAL) - min(points[i].x for i in FACE_OVAL)
+            analysis_points = _normalize_roll(points, image.width, image.height, angles[2]) if angles is not None and abs(angles[2]) <= config.roll_max else points
+            width = max(analysis_points[i].x for i in FACE_OVAL) - min(analysis_points[i].x for i in FACE_OVAL)
             checks.append(_check("face_size", width >= config.face_size, "face_too_small", width, config.face_size))
             edge = all(config.edge_margin <= coord <= 1 - config.edge_margin
                        for i in REQUIRED for coord in (points[i].x, points[i].y))
             checks.append(_check("edge", edge, "landmark_near_edge", None, config.edge_margin))
 
             def distance(a: int, b: int) -> float:
-                p, q = points[a], points[b]
+                p, q = analysis_points[a], analysis_points[b]
                 return pixel_distance(p.x, p.y, q.x, q.y, image.width, image.height)
 
             outer_width = distance(33, 263)
@@ -113,12 +136,17 @@ def validate(image: DecodedImage, landmarks: LandmarkResult, config: ValidationC
                 ratio = numerator / denominator if denominator > 0 else math.nan
                 passed = math.isfinite(ratio) and (ratio <= threshold if is_max else ratio >= threshold)
                 checks.append(_check(name, passed, reason, ratio if math.isfinite(ratio) else None, threshold))
-        matrix = landmarks.facial_transformation_matrices[0] if landmarks.facial_transformation_matrices else None
-        angles = _pose(matrix, config)
         checks.append(_check("transform_matrix", angles is not None, "invalid_transform_matrix"))
         if angles is not None:
-            for name, angle, limit in zip(("yaw", "pitch", "roll"), angles, (config.yaw, config.pitch, config.roll)):
+            for name, angle, limit in zip(("yaw", "pitch", "roll"), angles, (config.yaw_max, config.pitch_max, config.roll_max)):
                 checks.append(_check(name, abs(angle) <= limit, name + "_out_of_range", angle, limit))
+            logger.debug("pose warning thresholds yaw=%s pitch=%s", config.yaw_warning, config.pitch_warning)
+            for name, angle, warning_limit, maximum, message in (
+                ("YAW", angles[0], config.yaw_warning, config.yaw_max, "顔がやや横を向いているため、計測誤差が増える可能性があります。"),
+                ("PITCH", angles[1], config.pitch_warning, config.pitch_max, "顔がやや上下方向を向いているため、計測誤差が増える可能性があります。"),
+            ):
+                if warning_limit < abs(angle) <= maximum:
+                    warnings.append(QualityWarning("HEAD_" + name + "_WARNING", message))
     if count == 1:
         missing = tuple(i for i in REQUIRED if not (i < len(landmarks.faces[0]) and
                         math.isfinite(landmarks.faces[0][i].x) and math.isfinite(landmarks.faces[0][i].y) and
@@ -127,4 +155,4 @@ def validate(image: DecodedImage, landmarks: LandmarkResult, config: ValidationC
             if check.name == "required_landmarks":
                 checks[idx] = CheckResult(check.name, check.passed, check.reason, check.value, check.threshold, missing)
         checks.extend(_quality(image, config))
-    return ValidationResult(tuple(checks))
+    return ValidationResult(tuple(checks), tuple(warnings), analysis_points)

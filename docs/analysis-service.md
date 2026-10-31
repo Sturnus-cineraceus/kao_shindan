@@ -14,14 +14,14 @@ Web層はリクエスト値の構文・必須性を検証し、アップロー�
 入力bytesとreference_group
   → 画像デコード・正規化（DecodedImage）
   → Face Landmarker（LandmarkResult）
-  → validation
+  → validation・roll座標補正
   → 4距離の抽出（measurements）
   → 3比率の生成（features）
   → statistics（compare_features）
   → 型付き解析成功結果
 ```
 
-validationが成功するまでfeature extractionとstatisticsを呼ばない。品質条件に不合格の顔に参考スコアを返す経路は設けない。Face Landmarkerの `num_faces=2` は複数顔を拒否するための検出上限であり、許可する顔数はちょうど1人である。0人または2人以上なら失敗とし、複数顔から最大顔・先頭顔などを選択せず、後続の統計計算へ進まない。
+validationが成功するまでfeature extractionとstatisticsを呼ばない。feature extractionにはvalidationが生成した補正後の解析用ランドマークを渡し、元座標と補正後座標はHTTPへ返さない。品質条件に不合格の顔に参考スコアを返す経路は設けない。Face Landmarkerの `num_faces=2` は複数顔を拒否するための検出上限であり、許可する顔数はちょうど1人である。0人または2人以上なら失敗とし、複数顔から最大顔・先頭顔などを選択せず、後続の統計計算へ進まない。
 
 ## validation境界
 
@@ -42,6 +42,7 @@ validationの点集合、姿勢算出規約、画質評価前処理と初期閾�
 | `z_scores` | statistics層の項目別近似zスコアをそのまま引き継ぐ |
 | `distance` | statistics層の距離をそのまま引き継ぐ |
 | `score` | statistics層のスコアをそのまま引き継ぐ |
+| `quality_warnings` | 検証成功時の品質警告。安定したコードと日本語メッセージを保持する |
 | `quality_checks` | 実施したチェック、通過可否、必要に応じ判定値を追跡可能にする。詳細型は実装時に定める |
 | `approximation_notice` | UIが公開統計量由来の近似値で、実測人口順位ではないと表示するための情報 |
 | `algorithm_version` | 画像から特徴量を生成する解析アルゴリズム全体の版 |

@@ -29,6 +29,7 @@ class AnalysisResult:
     distance: float
     score: float
     quality_checks: tuple
+    quality_warnings: tuple
     approximation_notice: str
     algorithm_version: str
     reference_model_version: str
@@ -60,7 +61,7 @@ class AnalysisService:
                 logger.warning("analysis validation failed checks=%s", [c.name for c in failures])
                 reason = failures[0].reason
                 raise AnalysisError(reason if reason in ('no_face', 'multiple_faces') else 'validation_failed', failures)
-            measurements = extract_measurements(landmarks.faces[0], image.width, image.height)
+            measurements = extract_measurements(quality.analysis_landmarks, image.width, image.height)
             logger.debug("measurements=%s", asdict(measurements))
             features = build_features(measurements)
             logger.debug("features=%s", features.as_dict())
@@ -70,7 +71,7 @@ class AnalysisService:
             logger.debug("z_scores=%s distance=%s score=%s", statistics.z_scores, statistics.distance, statistics.score)
             result = AnalysisResult(statistics.reference_group, statistics.model_mode, asdict(measurements),
                 statistics.features, statistics.z_scores, statistics.distance, statistics.score,
-                quality.checks, '公開統計量に基づく近似値であり、実測人口順位ではありません。',
+                quality.checks, quality.warnings, '公開統計量に基づく近似値であり、実測人口順位ではありません。',
                 '1', statistics.reference_model_version, statistics.regularization_used)
             logger.info("analysis completed successfully")
             return result

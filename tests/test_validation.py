@@ -133,10 +133,20 @@ def test_blur_threshold(monkeypatch, variance, passed):
     assert check(validate(image(), result()), 'blur').passed == passed
 
 
-@pytest.mark.parametrize('axis,angle,passed', [('yaw',0,True),('yaw',10,True),('yaw',10.01,False),('pitch',10,True),('pitch',10.01,False),('roll',5,True),('roll',5.01,False)])
-def test_pose_thresholds(axis, angle, passed):
-    res = validate(image(), result(matrix=rotate(**{axis:angle})))
+@pytest.mark.parametrize('axis,angle,passed,warning', [
+    (axis, sign * angle, passed, warning)
+    for axis, cases in (
+        ('yaw', [(10, True, False), (10.01, True, True), (15, True, True), (15.01, False, False)]),
+        ('pitch', [(10, True, False), (10.01, True, True), (20, True, True), (20.01, False, False)]),
+        ('roll', [(0, True, False), (10, True, False), (20, True, False), (30, True, False), (30.01, False, False)]),
+    ) for angle, passed, warning in cases for sign in (-1, 1)
+])
+def test_pose_thresholds(axis, angle, passed, warning):
+    res = validate(image(), result(matrix=rotate(**{axis: angle})))
     assert check(res, axis).passed == passed
+    assert bool(res.warnings) == warning
+    if warning:
+        assert res.warnings[0].code == 'HEAD_' + axis.upper() + '_WARNING'
 
 
 def test_euler_convention_and_scale():
@@ -180,3 +190,28 @@ def test_resize_and_source_unchanged():
 
 def test_success():
     assert validate(image(), result()).passed
+
+
+@pytest.mark.parametrize('angle', [10, -10, 20, -20, 30, -30])
+def test_roll_correction_and_distance_invariance(angle):
+    from app.validation.service import _normalize_roll
+    from app.feature_extraction import extract_measurements, build_features
+    original = tuple(points())
+    # Use a non-square image and the same eye midpoint for the synthetic rotation.
+    rotated = _normalize_roll(original, 800, 400, -angle)
+    corrected = _normalize_roll(rotated, 800, 400, angle)
+    for expected, actual in zip(original, corrected):
+        assert (actual.x, actual.y, actual.z) == pytest.approx((expected.x, expected.y, expected.z))
+    before = extract_measurements(rotated, 800, 400)
+    after = extract_measurements(corrected, 800, 400)
+    from dataclasses import astuple
+    assert astuple(before) == pytest.approx(astuple(after))
+    assert build_features(before).as_tuple() == pytest.approx(build_features(after).as_tuple())
+
+
+def test_edge_uses_original_coordinates():
+    p = points()
+    p[468] = FaceLandmark(.03, .03, 0)
+    res = validate(image(), result(p, rotate(roll=30)))
+    assert check(res, 'edge').passed
+    assert res.analysis_landmarks[468].x < 0

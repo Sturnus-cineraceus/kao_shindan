@@ -7,9 +7,11 @@ class ValidationConfig:
     face_size: float = 0.30
     edge_margin: float = 0.02
     # 姿勢角とランドマーク間距離比による、正面・口閉じ・両目開きの判定閾値。
-    yaw: float = 10.0
-    pitch: float = 10.0
-    roll: float = 5.0
+    yaw_warning: float = 10.0
+    yaw_max: float = 15.0
+    pitch_warning: float = 10.0
+    pitch_max: float = 20.0
+    roll_max: float = 30.0
     mouth_ratio: float = 0.08
     eye_ratio: float = 0.10
     # 画質判定の初期値。blur は Laplacian 分散、dark/bright はグレースケール平均。

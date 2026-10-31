@@ -1,5 +1,7 @@
 from dataclasses import dataclass
 
+from app.landmarks import FaceLandmark
+
 
 @dataclass(frozen=True)
 class CheckResult:
@@ -12,8 +14,16 @@ class CheckResult:
 
 
 @dataclass(frozen=True)
+class QualityWarning:
+    code: str
+    message: str
+
+
+@dataclass(frozen=True)
 class ValidationResult:
     checks: tuple[CheckResult, ...]
+    warnings: tuple[QualityWarning, ...] = ()
+    analysis_landmarks: tuple[FaceLandmark, ...] | None = None
 
     @property
     def passed(self) -> bool:

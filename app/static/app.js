@@ -37,6 +37,7 @@ form.addEventListener('submit', async (event) => {
     document.querySelector('#score').textContent = String(data.score);
     document.querySelector('#result-group').textContent = groupLabel;
     document.querySelector('#notice').textContent = data.approximation_notice;
+    document.querySelector('#quality-warnings').textContent = [...new Set((data.quality_warnings || []).map(warning => warning.message))].join('\n');
     result.hidden = false;
   } catch (_) {
     error.textContent = '通信または解析に失敗しました。時間をおいて再度お試しください。';
