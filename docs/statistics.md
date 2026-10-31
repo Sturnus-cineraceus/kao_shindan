@@ -7,6 +7,9 @@ MVPのモデル方式は `summary_delta`、参照データの `model_version` �
 
 ## 特徴ベクトル
 
+AIST項目9・16は参照データに保持するが、core3の特徴、共分散、スコア、距離、ボリュームゾーンには使用しない。
+`face_aspect_ratio` は診断中の候補であり、正式モデルには追加しない。
+
 JSONの `biectocanthion_breadth`（外眼角幅）を共通分母 $Y$ とし、分子の順序を固定する。
 
 | 順序 | 分子 $X_i$ | 比率 $r_i$ |

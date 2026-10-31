@@ -38,14 +38,18 @@ JSONは派生データであり、手動で数値を編集しない。
 
 `reference_data.json` はMVPの `summary_delta_v1` が使う絶対寸法の公開統計値を保持する。
 トップレベルには `model_version`、出典名称とURLを持つ `source`、`reference_groups` を置く。
-各参照群の `measurements` は次の4寸法をキーとし、4群との組み合わせ計16件を持つ。
+各参照群の `measurements` は次の6寸法をキーとし、4群との組み合わせ計24件を持つ。
 
 | JSONキー | `measurement_id` | 寸法 |
 | --- | ---: | --- |
 | `interpupillary_breadth` | 5 | 瞳孔間幅 |
+| `bizygomatic_breadth` | 9 | 頬弓幅 |
 | `interocular_breadth` | 13 | 内眼角幅 |
 | `biectocanthion_breadth` | 14 | 外眼角幅 |
 | `mouth_breadth` | 15 | 口裂幅 |
+| `morphologic_face_height` | 16 | 形態学顔高（セリオンから） |
+
+項目9・16は参照データとして保持するが、現時点のcore3の統計計算には使用しない。
 
 各寸法レコードは次を持つ。
 
@@ -60,7 +64,7 @@ JSONは派生データであり、手動で数値を編集しない。
 パーセンタイルや最小値、最大値はMVPのJSONに必須としない。
 比率の平均、分散、標準偏差、比率間共分散、共分散行列、zスコア、距離、スコアはJSONに保存せず、[統計モデル](statistics.md)で計算する。
 
-生成時には対象の16組がすべて存在し、群と `measurement_id` の組が重複せず、単位が `mm` であることを検証する。
+生成時には対象の24組がすべて存在し、群と `measurement_id` の組が重複せず、単位が `mm` であることを検証する。
 `n` は正の整数、平均値と標準偏差は有限の正数とする。
 欠損、不正値、想定外の値を推測で補完せず、異常があれば生成を失敗させる。
 

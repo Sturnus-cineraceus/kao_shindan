@@ -15,6 +15,9 @@ MEASUREMENT_KEYS = (
     "biectocanthion_breadth",
     "mouth_breadth",
 )
+AVAILABLE_MEASUREMENT_KEYS = MEASUREMENT_KEYS + (
+    "bizygomatic_breadth", "morphologic_face_height",
+)
 EXPECTED_GROUPS = ("young_male", "young_female", "older_male", "older_female")
 DEFAULT_DATA_PATH = Path(__file__).resolve().parents[1] / "data" / "reference_data.json"
 
@@ -70,10 +73,14 @@ def parse_reference_data(payload: Any) -> ReferenceData:
     for group_name in EXPECTED_GROUPS:
         group_payload = groups_payload[group_name]
         measurements_payload = group_payload.get("measurements") if isinstance(group_payload, dict) else None
-        if not isinstance(measurements_payload, dict) or set(measurements_payload) != set(MEASUREMENT_KEYS):
-            raise ReferenceDataError(f"{group_name} must contain exactly the required measurements")
+        if (not isinstance(measurements_payload, dict)
+                or not set(MEASUREMENT_KEYS) <= set(measurements_payload)
+                or not set(measurements_payload) <= set(AVAILABLE_MEASUREMENT_KEYS)):
+            raise ReferenceDataError(f"{group_name} must contain core measurements and only supported measurements")
         measurements: dict[str, MeasurementSummary] = {}
-        for key in MEASUREMENT_KEYS:
+        for key in AVAILABLE_MEASUREMENT_KEYS:
+            if key not in measurements_payload:
+                continue
             entry = measurements_payload[key]
             if not isinstance(entry, dict):
                 raise ReferenceDataError(f"{group_name}.{key} must be an object")

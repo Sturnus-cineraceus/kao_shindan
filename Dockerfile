@@ -12,6 +12,7 @@ ENV FACE_LANDMARKER_MODEL_PATH=/opt/kao-cal/models/face_landmarker.task
 RUN python /tmp/download_face_landmarker.py && rm /tmp/download_face_landmarker.py
 COPY app ./app
 COPY scripts ./scripts
+COPY docs/aist_head_missing_face_csv/missing_face_measurements_combined.csv ./docs/aist_head_missing_face_csv/
 COPY tests ./tests
 
 EXPOSE 8000

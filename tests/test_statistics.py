@@ -13,6 +13,7 @@ from app.reference_data import (
     parse_reference_data,
 )
 from app.statistics import FEATURE_KEYS, ModelError, build_reference_model, compare_features
+from app.reference_data.loader import AVAILABLE_MEASUREMENT_KEYS
 from app.statistics.models import DENOMINATOR_KEY, NUMERATOR_KEYS, _volume_zone_score, _volume_zone_distribution
 
 
@@ -23,7 +24,7 @@ def test_reference_data_loads_and_validates_all_groups_and_measurements():
     data = load_reference_data()
     assert set(data.groups) == set(EXPECTED_GROUPS)
     for group in data.groups.values():
-        assert set(group.measurements) == set(MEASUREMENT_KEYS)
+        assert set(group.measurements) == set(AVAILABLE_MEASUREMENT_KEYS)
         for entry in group.measurements.values():
             assert np.isfinite(entry.mean_mm) and entry.mean_mm > 0
             assert np.isfinite(entry.sd_mm) and entry.sd_mm > 0
@@ -195,3 +196,20 @@ def test_reference_loader_rejects_bad_summary_values(bad):
     payload["reference_groups"]["young_male"]["measurements"]["mouth_breadth"]["sd_mm"] = bad
     with pytest.raises(ReferenceDataError):
         parse_reference_data(payload)
+
+@pytest.mark.parametrize("group", EXPECTED_GROUPS)
+def test_extra_reference_measurements_do_not_change_core3(group):
+    payload = json.loads((ROOT / "app/data/reference_data.json").read_text(encoding="utf-8"))
+    full = parse_reference_data(payload)
+    for value in payload["reference_groups"].values():
+        value["measurements"] = {k: v for k, v in value["measurements"].items() if k in MEASUREMENT_KEYS}
+    core = parse_reference_data(payload)
+    assert FEATURE_KEYS == ("interpupillary_breadth_ratio", "interocular_breadth_ratio", "mouth_breadth_ratio")
+    before = compare_features(group, [0.62, 0.31, 0.48], reference_data=core)
+    after = compare_features(group, [0.62, 0.31, 0.48], reference_data=full)
+    assert after.dimension == before.dimension == 3
+    assert after.used_features == before.used_features == FEATURE_KEYS
+    assert after.distance == before.distance
+    assert after.score == before.score
+    assert after.volume_zone_score == before.volume_zone_score
+    assert after.volume_zone_distribution == before.volume_zone_distribution

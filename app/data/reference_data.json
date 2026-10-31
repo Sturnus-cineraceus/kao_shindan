@@ -13,6 +13,12 @@
           "sd_mm": 3.0,
           "n": 56
         },
+        "bizygomatic_breadth": {
+          "measurement_id": 9,
+          "mean_mm": 145.1,
+          "sd_mm": 4.4,
+          "n": 56
+        },
         "interocular_breadth": {
           "measurement_id": 13,
           "mean_mm": 36.6,
@@ -30,6 +36,12 @@
           "mean_mm": 49.7,
           "sd_mm": 3.6,
           "n": 56
+        },
+        "morphologic_face_height": {
+          "measurement_id": 16,
+          "mean_mm": 121.1,
+          "sd_mm": 6.4,
+          "n": 56
         }
       }
     },
@@ -39,6 +51,12 @@
           "measurement_id": 5,
           "mean_mm": 61.7,
           "sd_mm": 2.7,
+          "n": 61
+        },
+        "bizygomatic_breadth": {
+          "measurement_id": 9,
+          "mean_mm": 137.7,
+          "sd_mm": 4.5,
           "n": 61
         },
         "interocular_breadth": {
@@ -58,6 +76,12 @@
           "mean_mm": 45.8,
           "sd_mm": 3.1,
           "n": 61
+        },
+        "morphologic_face_height": {
+          "measurement_id": 16,
+          "mean_mm": 113.9,
+          "sd_mm": 5.2,
+          "n": 61
         }
       }
     },
@@ -67,6 +91,12 @@
           "measurement_id": 5,
           "mean_mm": 64.4,
           "sd_mm": 3.0,
+          "n": 100
+        },
+        "bizygomatic_breadth": {
+          "measurement_id": 9,
+          "mean_mm": 146.9,
+          "sd_mm": 5.2,
           "n": 100
         },
         "interocular_breadth": {
@@ -86,6 +116,12 @@
           "mean_mm": 55.8,
           "sd_mm": 4.2,
           "n": 100
+        },
+        "morphologic_face_height": {
+          "measurement_id": 16,
+          "mean_mm": 123.9,
+          "sd_mm": 6.1,
+          "n": 100
         }
       }
     },
@@ -95,6 +131,12 @@
           "measurement_id": 5,
           "mean_mm": 61.1,
           "sd_mm": 2.6,
+          "n": 100
+        },
+        "bizygomatic_breadth": {
+          "measurement_id": 9,
+          "mean_mm": 138.3,
+          "sd_mm": 4.7,
           "n": 100
         },
         "interocular_breadth": {
@@ -113,6 +155,12 @@
           "measurement_id": 15,
           "mean_mm": 51.3,
           "sd_mm": 3.4,
+          "n": 100
+        },
+        "morphologic_face_height": {
+          "measurement_id": 16,
+          "mean_mm": 114.7,
+          "sd_mm": 5.5,
           "n": 100
         }
       }

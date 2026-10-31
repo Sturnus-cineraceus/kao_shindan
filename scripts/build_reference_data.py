@@ -21,9 +21,11 @@ SOURCE_URL = "https://www.airc.aist.go.jp/dhrt/head/"
 GROUPS = ("young_male", "young_female", "older_male", "older_female")
 MEASUREMENTS = (
     (5, "interpupillary_breadth"),
+    (9, "bizygomatic_breadth"),
     (13, "interocular_breadth"),
     (14, "biectocanthion_breadth"),
     (15, "mouth_breadth"),
+    (16, "morphologic_face_height"),
 )
 
 
