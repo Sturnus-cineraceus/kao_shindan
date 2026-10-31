@@ -107,3 +107,35 @@ def extract_face_aspect_ratio(landmarks: Sequence[FaceLandmark], image_width: in
     if not math.isfinite(ratio) or ratio <= 0:
         raise FeatureExtractionError("face aspect ratio must be finite and positive")
     return ratio
+
+
+def extract_face_width_ratios(landmarks, image_width, image_height, measurements, selected):
+    """頬幅の代理距離を一度計測し、選択された比率を返す。"""
+    if image_width <= 0 or image_height <= 0:
+        raise FeatureExtractionError("image dimensions must be positive")
+
+    def distance(a, b):
+        if max(a, b) >= len(landmarks):
+            raise FeatureExtractionError(f"required landmark index is missing: {max(a, b)}")
+        coords = [(_finite_coordinate(landmarks[i].x, f"landmark {i}.x"),
+                   _finite_coordinate(landmarks[i].y, f"landmark {i}.y")) for i in (a, b)]
+        return pixel_distance(*coords[0], *coords[1], image_width, image_height)
+
+    width = distance(234, 454)
+    if not math.isfinite(width) or width <= 0:
+        raise FeatureExtractionError("face width must be finite and positive")
+    numerators = {
+        "interpupillary_to_face_width_ratio": measurements.interpupillary_breadth,
+        "interocular_to_face_width_ratio": measurements.interocular_breadth,
+        "biectocanthion_to_face_width_ratio": measurements.biectocanthion_breadth,
+        "mouth_to_face_width_ratio": measurements.mouth_breadth,
+    }
+    if "face_aspect_ratio" in selected:
+        numerators["face_aspect_ratio"] = distance(168, 152)
+    result = {}
+    for key in selected:
+        value = _finite_coordinate(numerators[key], key) / width
+        if not math.isfinite(value) or value <= 0:
+            raise FeatureExtractionError(f"{key} must be finite and positive")
+        result[key] = value
+    return result

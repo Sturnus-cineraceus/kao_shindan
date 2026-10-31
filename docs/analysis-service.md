@@ -4,7 +4,7 @@
 
 ## 入力と責務
 
-解析要求は画像 `bytes`、`reference_group`、任意の `additional_features` からなる。追加特徴は `face_aspect_ratio` のみを許可し、未知IDと重複を拒否する。参照群はユーザーが明示選択する `young_male`、`young_female`、`older_male`、`older_female` のいずれかで、画像から性別や年齢を推定して選ばない。未知のIDは拒否し、35〜59歳を別群へ自動割当てしない。
+解析要求は画像 `bytes`、`reference_group`、任意の `additional_features` からなる。[統計モデル](statistics.md)に定義した5種類を選択でき、未知IDと重複を拒否する。参照群はユーザーが明示選択する `young_male`、`young_female`、`older_male`、`older_female` のいずれかで、画像から性別や年齢を推定して選ばない。未知のIDは拒否し、35〜59歳を別群へ自動割当てしない。
 
 Web層はリクエスト値の構文・必須性を検証し、アップロードから得たbytesと参照群IDを渡す。解析サービスも参照データ境界でIDの妥当性を確認し、不正な群では処理を始めない。`Request`、`UploadFile`、`HTMLResponse`、`TemplateResponse`、Jinja2型はサービス契約に含めない。
 
@@ -37,7 +37,7 @@ validationの点集合、姿勢算出規約、画質評価前処理と初期閾�
 | --- | --- |
 | `reference_group` | 選択された比較集団。statistics結果の値と一致する |
 | `model_mode` | 統計方式。MVPは `summary_delta`。将来 `empirical` に交換できる境界を保つ |
-| `profile_id` | `core3` または `core3+face_aspect_ratio` |
+| `profile_id` | `core3` に選択した追加特徴IDを内部の固定順で `+` 連結したもの |
 | `measurements` | pixel単位の4距離。後述のキーを使う |
 | `features` | 無次元比率。statistics `FEATURE_KEYS` のキーと順序を維持する |
 | `z_scores` | statistics層の項目別近似zスコアをそのまま引き継ぐ |

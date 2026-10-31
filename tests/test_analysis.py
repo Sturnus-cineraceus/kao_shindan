@@ -76,6 +76,13 @@ def test_optional_api(client, monkeypatch):
     assert body['profile_id'] == 'core3+face_aspect_ratio' and body['dimension'] == 4
     assert body['used_features'] == list(FEATURE_KEYS) + ['face_aspect_ratio']
     assert 'face_aspect_ratio' in body['features'] and 'face_aspect_ratio' in body['z_scores']
+    from app.statistics.models import OPTIONAL_FEATURE_ORDER
+    first = request(list(OPTIONAL_FEATURE_ORDER))
+    second = request(list(reversed(OPTIONAL_FEATURE_ORDER)))
+    assert first.status_code == second.status_code == 200
+    assert first.json()['profile_id'] == second.json()['profile_id']
+    assert first.json()['used_features'] == list(FEATURE_KEYS) + list(OPTIONAL_FEATURE_ORDER)
+    assert first.json()['dimension'] == 8
     for selection in (['unknown'], ['face_aspect_ratio', 'face_aspect_ratio']):
         response = request(selection)
         assert response.status_code == 400 and response.json()['error']['code'] == 'invalid_feature_selection'

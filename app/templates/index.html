@@ -31,6 +31,10 @@
       <p>基本3特徴（常時使用）：瞳孔間隔、内眼角幅、口裂幅</p>
       <p>実験的な追加項目</p>
       <label><input type="checkbox" name="additional_feature" value="face_aspect_ratio"> 顔の縦横比（実験的）</label>
+      <label><input type="checkbox" name="additional_feature" value="interpupillary_to_face_width_ratio"> 瞳孔間隔 / 頬幅</label>
+      <label><input type="checkbox" name="additional_feature" value="interocular_to_face_width_ratio"> 内眼角間隔 / 頬幅</label>
+      <label><input type="checkbox" name="additional_feature" value="biectocanthion_to_face_width_ratio"> 外眼角幅 / 頬幅</label>
+      <label><input type="checkbox" name="additional_feature" value="mouth_to_face_width_ratio"> 口幅 / 頬幅</label>
       <p>AISTの顔高／頬弓幅を、写真上の代理点から近似します。</p>
     </fieldset>
     <button type="submit">解析する</button>
@@ -41,6 +45,7 @@
     <h2 id="result-title">解析結果</h2>
     <p>解析モデル：<span id="result-profile"></span>（<span id="result-dimension"></span>特徴）</p>
     <p id="aspect-detail" hidden>顔の縦横比（実験的）：<span id="aspect-value"></span>、近似zスコア：<span id="aspect-z"></span></p>
+    <ul id="additional-details"></ul>
     <p>美形スコア</p>
     <p class="score" id="score"></p>
     <p>平均顔に近いほど美しいという本アプリの仮説に基づく近似スコアです。実測された美醜ではありません。</p>

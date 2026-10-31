@@ -10,6 +10,13 @@ let previewUrl = null;
 let volumeZoneChart = null;
 let featureRevision = 0;
 const chartContainer = document.querySelector('#volume-zone-chart-container');
+const featureLabels = {
+  face_aspect_ratio: '顔の縦横比（実験的）',
+  interpupillary_to_face_width_ratio: '瞳孔間隔 / 頬幅',
+  interocular_to_face_width_ratio: '内眼角間隔 / 頬幅',
+  biectocanthion_to_face_width_ratio: '外眼角幅 / 頬幅',
+  mouth_to_face_width_ratio: '口幅 / 頬幅'
+};
 
 form.querySelectorAll('[name="additional_feature"]').forEach(input => input.addEventListener('change', () => {
   featureRevision++;
@@ -115,8 +122,8 @@ form.addEventListener('submit', async (event) => {
     document.querySelector('#distance').textContent = String(data.distance);
     document.querySelector('#volume-zone-score').textContent = String(data.volume_zone_score);
     document.querySelector('#result-group').textContent = groupLabel;
-    document.querySelector('#result-profile').textContent = data.profile_id === 'core3+face_aspect_ratio'
-      ? '基本3特徴 + 顔の縦横比（実験的）' : '基本3特徴';
+    const selected = data.used_features.filter(key => key in featureLabels);
+    document.querySelector('#result-profile').textContent = ['基本3特徴', ...selected.map(key => featureLabels[key])].join(' + ');
     document.querySelector('#result-dimension').textContent = String(data.dimension);
     const aspectDetail = document.querySelector('#aspect-detail');
     aspectDetail.hidden = !data.used_features.includes('face_aspect_ratio');
@@ -124,6 +131,13 @@ form.addEventListener('submit', async (event) => {
       document.querySelector('#aspect-value').textContent = data.features.face_aspect_ratio.toFixed(4);
       document.querySelector('#aspect-z').textContent = data.z_scores.face_aspect_ratio.toFixed(4);
     }
+    const details = document.querySelector('#additional-details');
+    details.replaceChildren();
+    selected.filter(key => key !== 'face_aspect_ratio').forEach(key => {
+      const item = document.createElement('li');
+      item.textContent = `${featureLabels[key]}：${data.features[key].toFixed(4)}、近似zスコア：${data.z_scores[key].toFixed(4)}`;
+      details.appendChild(item);
+    });
     document.querySelector('#notice').textContent = data.approximation_notice;
     document.querySelector('#quality-warnings').textContent = [...new Set((data.quality_warnings || []).map(warning => warning.message))].join('\n');
     result.hidden = false;

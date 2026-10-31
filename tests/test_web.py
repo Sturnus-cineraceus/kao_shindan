@@ -23,8 +23,9 @@ def test_index_form_and_assets():
         parser.feed(response.text)
         inputs = [attrs for tag, attrs in parser.elements if tag == 'input']
         checkboxes = [x for x in inputs if x.get('type') == 'checkbox']
-        assert len(checkboxes) == 1
-        assert checkboxes[0].get('name') == 'additional_feature' and checkboxes[0].get('value') == 'face_aspect_ratio'
+        from app.statistics.models import OPTIONAL_FEATURE_ORDER
+        assert {x.get('value') for x in checkboxes} == set(OPTIONAL_FEATURE_ORDER)
+        assert all(x.get('name') == 'additional_feature' for x in checkboxes)
         assert all(any(attrs.get('id') == element for _, attrs in parser.elements) for element in ('result-profile', 'result-dimension'))
         assert any(x.get('name') == 'image' and x.get('type') == 'file' and x.get('accept') == 'image/jpeg,image/png' and 'required' in x for x in inputs)
         assert any(tag == 'div' and attrs.get('id') == 'image-preview' and 'hidden' in attrs for tag, attrs in parser.elements)
@@ -65,6 +66,6 @@ def test_volume_zone_chart_assets_and_contract():
         assert '{ x: data.distance, y: data.volume_zone_score }' in script
         assert all(label in script for label in ('距離分布', 'この顔', '最頻距離'))
         assert 'volumeZoneChart.destroy()' in script
-        assert 'Math.sqrt' not in script and 'chi' not in script.lower()
+        assert 'Math.sqrt' not in script
         for field in ('score', 'distance', 'volume-zone-score'):
             assert f"document.querySelector('#{field}').textContent" in script

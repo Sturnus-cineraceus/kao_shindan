@@ -10,7 +10,7 @@ from app.reference_data import load_reference_data, ReferenceDataError
 from app.reference_data.loader import EXPECTED_GROUPS
 from app.statistics import compare_features, ModelError
 from app.statistics.models import VolumeZoneDistribution, validate_additional_features
-from app.feature_extraction.service import FACE_ASPECT_LANDMARKS, extract_face_aspect_ratio
+from app.feature_extraction.service import FACE_ASPECT_LANDMARKS, extract_face_width_ratios
 
 logger = logging.getLogger(__name__)
 
@@ -61,7 +61,7 @@ class AnalysisService:
             logger.debug("image decoded width=%d height=%d", image.width, image.height)
             landmarks = self.landmarker.analyze(image)
             logger.debug("faces detected count=%d", landmarks.face_count)
-            quality = (validate(image, landmarks, additional_required_landmarks=FACE_ASPECT_LANDMARKS)
+            quality = (validate(image, landmarks, additional_required_landmarks=(FACE_ASPECT_LANDMARKS if 'face_aspect_ratio' in selected else frozenset((234, 454))))
                        if selected else validate(image, landmarks))
             for check in quality.checks:
                 logger.debug("validation name=%s passed=%s value=%s threshold=%s missing_ids=%s",
@@ -78,8 +78,8 @@ class AnalysisService:
             features = build_features(measurements)
             logger.debug("features=%s", features.as_dict())
             feature_values = features.as_dict()
-            if 'face_aspect_ratio' in selected:
-                feature_values['face_aspect_ratio'] = extract_face_aspect_ratio(quality.analysis_landmarks, image.width, image.height)
+            if selected:
+                feature_values.update(extract_face_width_ratios(quality.analysis_landmarks, image.width, image.height, measurements, selected))
             reference = load_reference_data()
             logger.debug("reference data loaded group=%s", reference_group)
             statistics = compare_features(reference_group, feature_values, reference_data=reference, additional_features=selected)

@@ -22,7 +22,14 @@ FEATURE_KEYS = (
 )
 NUMERATOR_KEYS = MEASUREMENT_KEYS[:2] + (MEASUREMENT_KEYS[3],)
 DENOMINATOR_KEY = "biectocanthion_breadth"
-OPTIONAL_FEATURE_ORDER = ("face_aspect_ratio",)
+OPTIONAL_NUMERATORS = {
+    "face_aspect_ratio": "morphologic_face_height",
+    "interpupillary_to_face_width_ratio": "interpupillary_breadth",
+    "interocular_to_face_width_ratio": "interocular_breadth",
+    "biectocanthion_to_face_width_ratio": "biectocanthion_breadth",
+    "mouth_to_face_width_ratio": "mouth_breadth",
+}
+OPTIONAL_FEATURE_ORDER = tuple(OPTIONAL_NUMERATORS)
 
 
 class ModelError(ValueError):
@@ -124,20 +131,30 @@ def build_reference_model(
                 covariance[i, j] = variances[i]
             else:
                 covariance[i, j] = numerator_means[i] * numerator_means[j] * sd_y**2 / mu_y**4
-    if "face_aspect_ratio" in selected:
-        try:
-            h = group.measurements["morphologic_face_height"]
-            w = group.measurements["bizygomatic_breadth"]
-        except KeyError as exc:
-            raise ModelError("face aspect ratio reference measurements are missing") from exc
-        mu_h = _finite_positive(h.mean_mm, "face height mean")
-        sd_h = _finite_positive(h.sd_mm, "face height sd")
+    if selected:
+        w = group.measurements["bizygomatic_breadth"]
         mu_w = _finite_positive(w.mean_mm, "face width mean")
         sd_w = _finite_positive(w.sd_mm, "face width sd")
-        mean = np.append(mean, mu_h / mu_w)
-        expanded = np.zeros((4, 4), dtype=np.float64)
+        expanded = np.zeros((3 + len(selected), 3 + len(selected)), dtype=np.float64)
         expanded[:3, :3] = covariance
-        expanded[3, 3] = sd_h**2 / mu_w**2 + mu_h**2 * sd_w**2 / mu_w**4
+        optional_means = []
+        for index, key in enumerate(selected, 3):
+            numerator_key = OPTIONAL_NUMERATORS[key]
+            x = group.measurements[numerator_key]
+            mu_x = _finite_positive(x.mean_mm, f"{key} mean")
+            sd_x = _finite_positive(x.sd_mm, f"{key} sd")
+            mean = np.append(mean, mu_x / mu_w)
+            expanded[index, index] = sd_x**2 / mu_w**2 + mu_x**2 * sd_w**2 / mu_w**4
+            for j, core_key in enumerate(NUMERATOR_KEYS):
+                if numerator_key == core_key:
+                    expanded[j, index] = sd_x**2 / (mu_y * mu_w)
+                elif numerator_key == DENOMINATOR_KEY:
+                    expanded[j, index] = -numerator_means[j] * sd_y**2 / (mu_y**2 * mu_w)
+                expanded[index, j] = expanded[j, index]
+            for j, other_mean in enumerate(optional_means):
+                expanded[3 + j, index] = other_mean * mu_x * sd_w**2 / mu_w**4
+                expanded[index, 3 + j] = expanded[3 + j, index]
+            optional_means.append(mu_x)
         covariance = expanded
     if not np.isfinite(mean).all() or not np.isfinite(covariance).all():
         raise ModelError("Reference model contains non-finite values")
@@ -217,6 +234,9 @@ def compare_features(
     observed = _coerce_features(features, model.features)
     delta = observed - model.mean
     try:
+        # 同じ元寸法から作る比率が多いと、一次近似の行列は特異になりうる。
+        if additional_features and np.linalg.eigvalsh(model.covariance)[0] <= np.max(np.diag(model.covariance)) * 1e-12:
+            raise np.linalg.LinAlgError("covariance is numerically singular")
         np.linalg.cholesky(model.covariance)
         covariance_for_solve = model.covariance
         regularization_used = False
