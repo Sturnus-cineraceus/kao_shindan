@@ -110,3 +110,7 @@ MVPは次を満たす。
 - 元画像を永続保存せず、結果に「公開統計量から推定した近似値」と明示する。
 
 本書のテスト項目は実装後に実行する検証計画であり、現在すでに合格したことを意味しない。
+
+## APIとログの追加検証
+
+loggingのconsole/file両handler、temporary directoryへのUTF-8書き込み、初期化冪等性、DEBUG工程値、validation WARNING、想定外例外のERROR＋traceback、ログ禁止情報の不在を確認する。APIの複数issues、内部数値・ランドマークIDの非露出、顔未検出時の顔依存issue抑止、正常レスポンス互換性を確認する。Compose configと `docker compose run --rm app python -m pytest -q` で実行環境を検証する。

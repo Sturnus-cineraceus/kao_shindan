@@ -98,3 +98,7 @@ RGB画像をOpenCV `COLOR_RGB2GRAY`相当の係数で8bitグレースケール�
 - Face Oval、左右の眼輪郭接続: [MediaPipe Python FaceLandmarksConnections](https://developers.google.com/edge/api/mediapipe/python/mp/tasks/vision/FaceLandmarksConnections)
 - transformation matrixがcanonical faceからruntime faceへの写像で、scale・rotation・translationを含む4x4である定義: [MediaPipe face_geometry.proto](https://github.com/google-ai-edge/mediapipe/blob/master/mediapipe/modules/face_geometry/protos/face_geometry.proto)
 - Python Face Landmarkerの公開結果型と設定: [MediaPipe Face Landmarker Python API](https://github.com/google-ai-edge/mediapipe/blob/master/mediapipe/tasks/python/vision/face_landmarker.py)
+
+## Issueコード
+
+内部CheckResultのname、value、thresholdはサーバーログ用であり、APIでは安定したissue codeと日本語messageへ変換する。同時に判断できる問題は複数返す。顔未検出では顔依存チェックを抑止し、`FACE_NOT_FOUND`を主要理由とする。必須点不足は内部でIDを記録し、利用者には目・口・顔輪郭など部位名を示す。

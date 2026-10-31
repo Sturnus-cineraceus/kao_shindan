@@ -58,3 +58,7 @@ docker compose run --rm app python -m pytest -q
 - [アーキテクチャ](docs/architecture.md)
 - [画像解析](docs/image-analysis.md)
 - [テスト方針](docs/testing.md)
+
+## ログ
+
+Dockerのアプリログは `docker compose logs app` で確認できます。テキストログはホスト側の `./logs/app.log` に保存され、コンテナ内 `/app/logs` とbind mountしています。Compose開発環境の既定レベルはDEBUGです。変更する場合は `.env` に `LOG_LEVEL=INFO` などを設定します。`LOG_FILE`、`LOG_MAX_BYTES`、`LOG_BACKUP_COUNT` も変更でき、既定は10MBごとにローテーションし、5世代を保持します。ログファイルはGit管理対象外です。

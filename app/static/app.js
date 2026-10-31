@@ -27,7 +27,10 @@ form.addEventListener('submit', async (event) => {
     const response = await fetch('/analyze', { method: 'POST', body: new FormData(form) });
     const data = await response.json();
     if (!response.ok) {
-      error.textContent = messages[data.error?.code] || messages.analysis_error;
+      const issues = data.error?.issues;
+      error.textContent = Array.isArray(issues) && issues.length
+        ? (issues.length === 1 ? issues[0].message : `次の問題があります：\n${issues.map((issue) => `・${issue.message}`).join('\n')}`)
+        : (messages[data.error?.code] || messages.analysis_error);
       error.hidden = false;
       return;
     }

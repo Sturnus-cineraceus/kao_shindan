@@ -31,8 +31,8 @@ REQUIRED = frozenset(FACE_OVAL) | {468, 473, 133, 362, 33, 263, 61, 291,
                                   13, 14, 159, 145, 386, 374}
 
 
-def _check(name: str, passed: bool, reason: str, value: float | None = None) -> CheckResult:
-    return CheckResult(name, bool(passed), None if passed else reason, value)
+def _check(name: str, passed: bool, reason: str, value: float | None = None, threshold: float | None = None) -> CheckResult:
+    return CheckResult(name, bool(passed), None if passed else reason, value, threshold)
 
 
 def _pose(matrix: object, config: ValidationConfig) -> tuple[float, float, float] | None:
@@ -72,11 +72,11 @@ def _quality(image: DecodedImage, config: ValidationConfig) -> list[CheckResult]
     black = float(np.count_nonzero(gray <= config.black_max) / gray.size)
     white = float(np.count_nonzero(gray >= config.white_min) / gray.size)
     return [
-        _check("blur", blur >= config.blur, "blurred", blur),
-        _check("dark", mean >= config.dark, "too_dark", mean),
-        _check("bright", mean <= config.bright, "too_bright", mean),
-        _check("black_clipping", black < config.black_clipping, "shadow_clipping", black),
-        _check("white_clipping", white < config.white_clipping, "highlight_clipping", white),
+        _check("blur", blur >= config.blur, "blurred", blur, config.blur),
+        _check("dark", mean >= config.dark, "too_dark", mean, config.dark),
+        _check("bright", mean <= config.bright, "too_bright", mean, config.bright),
+        _check("black_clipping", black < config.black_clipping, "shadow_clipping", black, config.black_clipping),
+        _check("white_clipping", white < config.white_clipping, "highlight_clipping", white, config.white_clipping),
     ]
 
 
@@ -92,10 +92,10 @@ def validate(image: DecodedImage, landmarks: LandmarkResult, config: ValidationC
         checks.append(_check("required_landmarks", valid, "required_landmark_missing"))
         if valid:
             width = max(points[i].x for i in FACE_OVAL) - min(points[i].x for i in FACE_OVAL)
-            checks.append(_check("face_size", width >= config.face_size, "face_too_small", width))
+            checks.append(_check("face_size", width >= config.face_size, "face_too_small", width, config.face_size))
             edge = all(config.edge_margin <= coord <= 1 - config.edge_margin
                        for i in REQUIRED for coord in (points[i].x, points[i].y))
-            checks.append(_check("edge", edge, "landmark_near_edge"))
+            checks.append(_check("edge", edge, "landmark_near_edge", None, config.edge_margin))
 
             def distance(a: int, b: int) -> float:
                 p, q = points[a], points[b]
@@ -112,12 +112,19 @@ def validate(image: DecodedImage, landmarks: LandmarkResult, config: ValidationC
                 numerator, denominator = distance(upper, lower), distance(left, right)
                 ratio = numerator / denominator if denominator > 0 else math.nan
                 passed = math.isfinite(ratio) and (ratio <= threshold if is_max else ratio >= threshold)
-                checks.append(_check(name, passed, reason, ratio if math.isfinite(ratio) else None))
+                checks.append(_check(name, passed, reason, ratio if math.isfinite(ratio) else None, threshold))
         matrix = landmarks.facial_transformation_matrices[0] if landmarks.facial_transformation_matrices else None
         angles = _pose(matrix, config)
         checks.append(_check("transform_matrix", angles is not None, "invalid_transform_matrix"))
         if angles is not None:
             for name, angle, limit in zip(("yaw", "pitch", "roll"), angles, (config.yaw, config.pitch, config.roll)):
-                checks.append(_check(name, abs(angle) <= limit, name + "_out_of_range", angle))
-    checks.extend(_quality(image, config))
+                checks.append(_check(name, abs(angle) <= limit, name + "_out_of_range", angle, limit))
+    if count == 1:
+        missing = tuple(i for i in REQUIRED if not (i < len(landmarks.faces[0]) and
+                        math.isfinite(landmarks.faces[0][i].x) and math.isfinite(landmarks.faces[0][i].y) and
+                        0 <= landmarks.faces[0][i].x <= 1 and 0 <= landmarks.faces[0][i].y <= 1))
+        for idx, check in enumerate(checks):
+            if check.name == "required_landmarks":
+                checks[idx] = CheckResult(check.name, check.passed, check.reason, check.value, check.threshold, missing)
+        checks.extend(_quality(image, config))
     return ValidationResult(tuple(checks))

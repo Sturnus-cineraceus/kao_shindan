@@ -48,6 +48,28 @@ def test_api_success(client):
     assert 'faces' not in result
 
 
+def test_validation_response_has_safe_multiple_issues(client, monkeypatch):
+    import app.analysis as analysis
+    monkeypatch.setattr(analysis, 'validate', lambda *_: ValidationResult((
+        CheckResult('yaw', False, 'yaw_out_of_range', 22.0),
+        CheckResult('blur', False, 'blurred', 4.0),
+    )))
+    response = post(client, FIXTURE.read_bytes())
+    body = response.json()['error']
+    assert [i['code'] for i in body['issues']] == ['HEAD_YAW_TOO_LARGE', 'IMAGE_BLURRED']
+    assert '22' not in response.text and '4.0' not in response.text
+    assert 'checks' not in body
+
+
+def test_no_face_suppresses_dependent_issues(client, monkeypatch):
+    import app.analysis as analysis
+    monkeypatch.setattr(analysis, 'validate', lambda *_: ValidationResult((
+        CheckResult('face_count', False, 'no_face'),
+    )))
+    response = post(client, FIXTURE.read_bytes())
+    assert [x['code'] for x in response.json()['error']['issues']] == ['FACE_NOT_FOUND']
+
+
 @pytest.mark.parametrize('image,group,code', [(None, 'young_male', 'invalid_request'), (b'x', None, 'invalid_request'),
     (b'x', 'unknown', 'invalid_reference_group'), (b'x', 'young_male', 'invalid_image')])
 def test_api_invalid_inputs(client, image, group, code):
@@ -64,7 +86,10 @@ def test_validation_stops_scoring(client, monkeypatch, reason, code):
     response = post(client, FIXTURE.read_bytes())
     assert response.status_code == 422
     assert response.json()['error']['code'] == code
-    assert response.json()['error']['checks'][0]['reason'] == reason
+    if reason == 'blurred':
+        assert response.json()['error']['issues'][0]['code'] == 'IMAGE_BLURRED'
+    else:
+        assert 'checks' not in response.json()['error']
 
 
 def test_real_pipeline():

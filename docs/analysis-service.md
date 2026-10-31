@@ -92,3 +92,11 @@ POST /analyze
 顔なし、複数顔、その他の品質不合格はそれぞれ `422 no_face`、`422 multiple_faces`、`422 validation_failed` とし、失敗したチェック名と理由を `checks` に返す。顔数を最優先し、その他は実行順に並べる。モデルのロード失敗は `503 model_unavailable`、その他の内部解析失敗は `500 analysis_error` とし、内部詳細を返さない。エラーは `{"error":{"code":...,"message":...,"checks":[...]}}` の形とし、チェックがない場合は空配列とする。ブラウザーからのクロスオリジン送信はOriginを同一オリジンに制限する。認証やCookieを用いないAPIであり、Originのない非ブラウザクライアントも受け付ける。
 
 Landmarkerはアプリケーション単位で遅延ロードし、ロックで推論を直列化して再利用する。終了時に閉じる。アルゴリズム版は初期値 `1` とする。
+
+## API issueとログ
+
+HTTP応答は既存のトップレベル error.code を維持し、validation時に `issues: [{code, message}]` を返す。CheckResultの内部値・閾値・ランドマークIDは応答へ含めない。同時に確定したissueはすべて列挙し、顔未検出時は顔依存チェックを行わない。必要ランドマークの不足IDはログだけに記録し、画面では人が理解できる部位名にまとめる。
+
+## 解析ログ
+
+共通の標準logging設定からconsoleとUTF-8ファイルへ出力する。解析開始・完了・失敗概要はINFO、工程値とvalidation比較はDEBUG、入力・品質拒否はWARNING、モデル障害と想定外障害はERRORとする。想定外例外はスタックトレースを記録する。画像本体、bytes、全ランドマーク座標、multipart本文は記録しない。

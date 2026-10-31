@@ -3,6 +3,7 @@ from dataclasses import asdict
 from email import policy
 from email.parser import BytesParser
 import os
+import logging
 from urllib.parse import urlsplit
 
 from fastapi import FastAPI, Request
@@ -15,6 +16,9 @@ from starlette.concurrency import run_in_threadpool
 from app.analysis import AnalysisError, AnalysisService
 from app.image_processing.decoder import MAX_INPUT_BYTES
 from app.landmarks import FaceLandmarkerService
+from app.logging_config import configure_logging
+
+logger = configure_logging()
 
 
 @asynccontextmanager
@@ -39,8 +43,32 @@ def index(request: Request):
 
 
 def error(code: str, status: int, checks=()):
-    return JSONResponse(status_code=status, content={'error': {'code': code, 'message': code,
-        'checks': [asdict(check) for check in checks]}}, headers={'Cache-Control': 'no-store'})
+    issue_map = {
+        'no_face': ('FACE_NOT_FOUND', '顔を検出できませんでした。正面を向いた顔が写る画像を選んでください。'),
+        'multiple_faces': ('MULTIPLE_FACES', '複数の顔が検出されました。1人だけが写る画像を選んでください。'),
+        'face_too_small': ('FACE_TOO_SMALL', '顔が小さすぎます。顔が大きく写る画像を選んでください。'),
+        'landmark_near_edge': ('FACE_OUT_OF_FRAME', '顔が画像端に近すぎるか、必要な部分が画像外にあります。'),
+        'yaw_out_of_range': ('HEAD_YAW_TOO_LARGE', '顔が横を向きすぎています。正面を向いた画像を選んでください。'),
+        'pitch_out_of_range': ('HEAD_PITCH_TOO_LARGE', '顔が上下方向に向きすぎています。正面を向いた画像を選んでください。'),
+        'roll_out_of_range': ('HEAD_ROLL_TOO_LARGE', '顔が傾きすぎています。まっすぐ撮影してください。'),
+        'eye_closed': ('EYE_CLOSED', '目を開けた画像を選んでください。'),
+        'mouth_open': ('MOUTH_OPEN', '口を閉じた画像を選んでください。'),
+        'blurred': ('IMAGE_BLURRED', '画像がぼやけています。鮮明な画像を選んでください。'),
+        'too_dark': ('IMAGE_TOO_DARK', '画像が暗すぎます。明るい場所で撮影してください。'),
+        'too_bright': ('IMAGE_TOO_BRIGHT', '画像が明るすぎます。露出を調整してください。'),
+        'shadow_clipping': ('BLACK_CLIPPING', '画像の暗い部分がつぶれています。'),
+        'highlight_clipping': ('WHITE_CLIPPING', '画像の明るい部分が白飛びしています。'),
+        'required_landmark_missing': ('REQUIRED_LANDMARK_MISSING', '瞳・目元・口元・顔輪郭の一部を確認できません。顔全体が写る画像を選んでください。'),
+    }
+    issues = []
+    seen = set()
+    for check in checks:
+        mapped = issue_map.get(check.reason)
+        if mapped and mapped[0] not in seen:
+            seen.add(mapped[0])
+            issues.append({'code': mapped[0], 'message': mapped[1]})
+    message = issues[0]['message'] if issues else code
+    return JSONResponse(status_code=status, content={'error': {'code': code, 'message': message, 'issues': issues}}, headers={'Cache-Control': 'no-store'})
 
 
 @app.post('/analyze')
@@ -82,5 +110,12 @@ async def analyze(request: Request):
                   'model_unavailable': 503, 'analysis_error': 500}.get(exc.code, 500)
         return error(exc.code, status, exc.checks)
     except Exception:
+        logging.getLogger(__name__).exception('unexpected analysis API error')
         return error('analysis_error', 500)
-    return JSONResponse(content=asdict(result), headers={'Cache-Control': 'no-store'})
+    payload = asdict(result)
+    # Keep the established success envelope while withholding internal check metrics.
+    payload['quality_checks'] = [
+        {'name': check.name, 'passed': check.passed, 'reason': check.reason}
+        for check in result.quality_checks
+    ]
+    return JSONResponse(content=payload, headers={'Cache-Control': 'no-store'})

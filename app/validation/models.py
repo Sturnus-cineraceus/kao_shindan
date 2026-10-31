@@ -7,6 +7,8 @@ class CheckResult:
     passed: bool
     reason: str | None = None
     value: float | None = None
+    threshold: float | None = None
+    missing_ids: tuple[int, ...] = ()
 
 
 @dataclass(frozen=True)
