@@ -23,6 +23,9 @@ def test_index_form_and_assets():
         parser.feed(response.text)
         inputs = [attrs for tag, attrs in parser.elements if tag == 'input']
         checkboxes = [x for x in inputs if x.get('type') == 'checkbox']
+        profiles = [x for x in inputs if x.get('name') == 'calculation_profile']
+        assert {x.get('value') for x in profiles} == {'legacy', 'representative3'}
+        assert 'checked' in next(x for x in profiles if x['value'] == 'legacy')
         from app.statistics.models import OPTIONAL_FEATURE_ORDER
         assert {x.get('value') for x in checkboxes} == set(OPTIONAL_FEATURE_ORDER)
         assert all(x.get('name') == 'additional_feature' for x in checkboxes)
@@ -37,6 +40,10 @@ def test_index_form_and_assets():
         assert all(label in response.text for label in ('美形スコア', '平均顔距離', 'ボリュームゾーン度'))
         assert all(any(attrs.get('id') == element for _, attrs in parser.elements) for element in ('score', 'distance', 'volume-zone-score'))
         script = client.get('/static/app.js').text
+        assert "form.elements.calculation_profile.value === 'representative3'" in script
+        assert "querySelector('#additional-features').disabled = representative" in script
+        assert "querySelector('#calculation-profile').textContent" in script
+        assert "new FormData(form)" in script
         assert "input.addEventListener('change'" in script
         assert 'featureRevision++' in script and 'submittedRevision !== featureRevision' in script
         assert 'result.hidden = true' in script and 'destroyVolumeZoneChart();' in script

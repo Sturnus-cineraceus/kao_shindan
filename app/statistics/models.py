@@ -30,6 +30,7 @@ OPTIONAL_NUMERATORS = {
     "mouth_to_face_width_ratio": "mouth_breadth",
 }
 OPTIONAL_FEATURE_ORDER = tuple(OPTIONAL_NUMERATORS)
+REPRESENTATIVE3_FEATURES = ("face_aspect_ratio", "biectocanthion_to_face_width_ratio", "mouth_to_face_width_ratio")
 
 
 class ModelError(ValueError):
@@ -169,6 +170,29 @@ def build_reference_model(
     )
 
 
+
+def build_representative3_model(reference_group: str, reference_data: ReferenceData | None = None, *, epsilon: float = EPSILON) -> ReferenceModel:
+    """Build the fixed three ratios with their shared face-width denominator."""
+    if not np.isfinite(epsilon) or epsilon <= 0:
+        raise ModelError("epsilon must be finite and positive")
+    data = reference_data or load_reference_data()
+    try:
+        group = data.get_group(reference_group)
+    except ReferenceDataError as exc:
+        raise ModelError(str(exc)) from exc
+    width = group.measurements["bizygomatic_breadth"]
+    mu_y = _finite_positive(width.mean_mm, "face width mean")
+    sd_y = _finite_positive(width.sd_mm, "face width sd")
+    summaries = [group.measurements[OPTIONAL_NUMERATORS[key]] for key in REPRESENTATIVE3_FEATURES]
+    means = np.asarray([_finite_positive(x.mean_mm, "numerator mean") for x in summaries])
+    sds = np.asarray([_finite_positive(x.sd_mm, "numerator sd") for x in summaries])
+    mean = means / mu_y
+    covariance = np.outer(means, means) * sd_y**2 / mu_y**4 + np.diag(sds**2 / mu_y**2)
+    mean.setflags(write=False)
+    covariance.setflags(write=False)
+    return ReferenceModel(reference_group, MODEL_MODE, REPRESENTATIVE3_FEATURES, mean, covariance,
+                          np.sqrt(np.diag(covariance)), data.model_version, float(epsilon))
+
 def _coerce_features(values: Mapping[str, float] | Sequence[float], keys: tuple[str, ...]) -> FloatArray:
     if isinstance(values, Mapping):
         if set(values) != set(keys):
@@ -227,9 +251,17 @@ def compare_features(
     reference_data: ReferenceData | None = None,
     epsilon: float = EPSILON,
     additional_features: Sequence[str] = (),
+    calculation_profile: str = "legacy",
 ) -> StatisticsResult:
     """Return approximate z scores, Mahalanobis distance, and chi-square score."""
-    model = build_reference_model(reference_group, reference_data, epsilon=epsilon, additional_features=additional_features)
+    if calculation_profile == "representative3":
+        if additional_features:
+            raise ModelError("additional features are not allowed")
+        model = build_representative3_model(reference_group, reference_data, epsilon=epsilon)
+    elif calculation_profile == "legacy":
+        model = build_reference_model(reference_group, reference_data, epsilon=epsilon, additional_features=additional_features)
+    else:
+        raise ModelError("invalid calculation profile")
     dimension = len(model.features)
     observed = _coerce_features(features, model.features)
     delta = observed - model.mean

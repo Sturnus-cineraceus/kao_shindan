@@ -95,24 +95,34 @@ async def analyze(request: Request):
     additional_features = []
     for part in message.iter_parts():
         name = part.get_param('name', header='content-disposition')
-        if name not in ('image', 'reference_group', 'additional_feature') or (name != 'additional_feature' and name in fields) or part.is_multipart():
+        if name not in ('image', 'reference_group', 'additional_feature', 'calculation_profile') or (name != 'additional_feature' and name in fields) or part.is_multipart():
             return error('invalid_request', 400)
         if name == 'additional_feature':
             additional_features.append(part.get_payload(decode=True))
         else:
             fields[name] = part.get_payload(decode=True)
-    if set(fields) != {'image', 'reference_group'} or any(value is None for value in fields.values()):
+    if not {'image', 'reference_group'} <= set(fields) or any(value is None for value in fields.values()):
         return error('invalid_request', 400)
     try:
         group = fields['reference_group'].decode('utf-8')
     except UnicodeDecodeError:
         return error('invalid_reference_group', 400)
     try:
+        profile = fields.get('calculation_profile', b'legacy').decode('utf-8')
+    except UnicodeDecodeError:
+        return error('invalid_calculation_profile', 400)
+    if profile not in ('legacy', 'representative3'):
+        return error('invalid_calculation_profile', 400)
+    if profile == 'representative3' and additional_features:
+        return error('features_not_allowed_for_profile', 400)
+    try:
         selected = validate_additional_features(tuple(value.decode('utf-8') for value in additional_features))
     except (UnicodeDecodeError, AttributeError, ModelError):
         return error('invalid_feature_selection', 400)
     try:
-        if selected:
+        if profile == 'representative3':
+            result = await run_in_threadpool(request.app.state.analysis_service.analyze, fields['image'], group, (), profile)
+        elif selected:
             result = await run_in_threadpool(request.app.state.analysis_service.analyze, fields['image'], group, selected)
         else:
             result = await run_in_threadpool(request.app.state.analysis_service.analyze, fields['image'], group)

@@ -88,6 +88,34 @@ def test_optional_api(client, monkeypatch):
         assert response.status_code == 400 and response.json()['error']['code'] == 'invalid_feature_selection'
 
 
+def test_calculation_profiles(client, monkeypatch):
+    import app.analysis as analysis
+    from app.landmarks import FaceLandmark
+    landmarks = [FaceLandmark(.5, .5, 0) for _ in range(478)]
+    for index, x, y in ((168, .5, .2), (152, .5, .8), (234, .2, .5), (454, .8, .5)):
+        landmarks[index] = FaceLandmark(x, y, 0)
+    monkeypatch.setattr(analysis, 'validate', lambda *a, **kw: ValidationResult((CheckResult('face_count', True),), analysis_landmarks=landmarks))
+    def request(profile=None, features=()):
+        files = [('image', ('face.png', FIXTURE.read_bytes(), 'image/png')), ('reference_group', (None, 'young_female'))]
+        if profile is not None:
+            files.append(('calculation_profile', (None, profile)))
+        files.extend(('additional_feature', (None, feature)) for feature in features)
+        return client.post('/analyze', files=files)
+    default, legacy = request(), request('legacy')
+    assert default.status_code == legacy.status_code == 200
+    assert default.json() == legacy.json()
+    assert request('legacy', ('face_aspect_ratio',)).status_code == 200
+    result = request('representative3')
+    assert result.status_code == 200
+    body = result.json()
+    assert body['profile_id'] == 'representative3' and body['dimension'] == 3
+    assert body['used_features'] == ['face_aspect_ratio', 'biectocanthion_to_face_width_ratio', 'mouth_to_face_width_ratio']
+    assert set(body['features']) == set(body['z_scores']) == set(body['used_features'])
+    for profile, features, code in [('unknown', (), 'invalid_calculation_profile'), ('representative3', ('face_aspect_ratio',), 'features_not_allowed_for_profile')]:
+        response = request(profile, features)
+        assert response.status_code == 400 and response.json()['error']['code'] == code
+
+
 def test_validation_response_has_safe_multiple_issues(client, monkeypatch):
     import app.analysis as analysis
     monkeypatch.setattr(analysis, 'validate', lambda *_: ValidationResult((

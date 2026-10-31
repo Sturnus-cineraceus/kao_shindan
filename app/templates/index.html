@@ -27,6 +27,12 @@
       <option value="older_female">高齢女性（60〜84歳）</option>
     </select>
     <fieldset>
+      <legend>計算方式</legend>
+      <label><input type="radio" name="calculation_profile" value="legacy" checked> 従来方式</label>
+      <label><input type="radio" name="calculation_profile" value="representative3"> 二次検討方式（代表3特徴・検証用）</label>
+    </fieldset>
+    <p id="representative-notice" hidden>顔の縦横比、外眼角幅、口幅の代表3特徴を固定で使用します。</p>
+    <fieldset id="additional-features">
       <legend>使用する特徴</legend>
       <p>基本3特徴（常時使用）：瞳孔間隔、内眼角幅、口裂幅</p>
       <p>実験的な追加項目</p>
@@ -43,6 +49,7 @@
   <p id="error" role="alert" hidden></p>
   <section id="result" aria-labelledby="result-title" hidden>
     <h2 id="result-title">解析結果</h2>
+    <p>計算方式：<span id="calculation-profile"></span></p>
     <p>解析モデル：<span id="result-profile"></span>（<span id="result-dimension"></span>特徴）</p>
     <p id="aspect-detail" hidden>顔の縦横比（実験的）：<span id="aspect-value"></span>、近似zスコア：<span id="aspect-z"></span></p>
     <ul id="additional-details"></ul>

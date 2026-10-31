@@ -9,7 +9,7 @@ from app.feature_extraction import extract_measurements, build_features, Feature
 from app.reference_data import load_reference_data, ReferenceDataError
 from app.reference_data.loader import EXPECTED_GROUPS
 from app.statistics import compare_features, ModelError
-from app.statistics.models import VolumeZoneDistribution, validate_additional_features
+from app.statistics.models import VolumeZoneDistribution, validate_additional_features, REPRESENTATIVE3_FEATURES
 from app.feature_extraction.service import FACE_ASPECT_LANDMARKS, extract_face_width_ratios
 
 logger = logging.getLogger(__name__)
@@ -46,12 +46,16 @@ class AnalysisResult:
 class AnalysisService:
     def __init__(self, landmarker): self.landmarker = landmarker
 
-    def analyze(self, data: bytes, reference_group: str, additional_features: tuple[str, ...] = ()) -> AnalysisResult:
+    def analyze(self, data: bytes, reference_group: str, additional_features: tuple[str, ...] = (), calculation_profile: str = "legacy") -> AnalysisResult:
         logger.info("analysis started")
         logger.debug("input image bytes=%d", len(data))
         if reference_group not in EXPECTED_GROUPS:
             logger.warning("analysis rejected: invalid reference group")
             raise AnalysisError('invalid_reference_group')
+        if calculation_profile not in ("legacy", "representative3"):
+            raise AnalysisError('invalid_calculation_profile')
+        if calculation_profile == "representative3" and additional_features:
+            raise AnalysisError('features_not_allowed_for_profile')
         try:
             selected = validate_additional_features(additional_features)
         except ModelError as exc:
@@ -61,8 +65,9 @@ class AnalysisService:
             logger.debug("image decoded width=%d height=%d", image.width, image.height)
             landmarks = self.landmarker.analyze(image)
             logger.debug("faces detected count=%d", landmarks.face_count)
-            quality = (validate(image, landmarks, additional_required_landmarks=(FACE_ASPECT_LANDMARKS if 'face_aspect_ratio' in selected else frozenset((234, 454))))
-                       if selected else validate(image, landmarks))
+            required_features = REPRESENTATIVE3_FEATURES if calculation_profile == 'representative3' else selected
+            quality = (validate(image, landmarks, additional_required_landmarks=(FACE_ASPECT_LANDMARKS if 'face_aspect_ratio' in required_features else frozenset((234, 454))))
+                       if required_features else validate(image, landmarks))
             for check in quality.checks:
                 logger.debug("validation name=%s passed=%s value=%s threshold=%s missing_ids=%s",
                              check.name, check.passed, check.value, check.threshold, check.missing_ids)
@@ -78,18 +83,19 @@ class AnalysisService:
             features = build_features(measurements)
             logger.debug("features=%s", features.as_dict())
             feature_values = features.as_dict()
-            if selected:
-                feature_values.update(extract_face_width_ratios(quality.analysis_landmarks, image.width, image.height, measurements, selected))
+            if required_features:
+                extra_values = extract_face_width_ratios(quality.analysis_landmarks, image.width, image.height, measurements, required_features)
+                feature_values = extra_values if calculation_profile == 'representative3' else {**feature_values, **extra_values}
             reference = load_reference_data()
             logger.debug("reference data loaded group=%s", reference_group)
-            statistics = compare_features(reference_group, feature_values, reference_data=reference, additional_features=selected)
+            statistics = compare_features(reference_group, feature_values, reference_data=reference, additional_features=selected, calculation_profile=calculation_profile)
             logger.debug("z_scores=%s distance=%s score=%s", statistics.z_scores, statistics.distance, statistics.score)
-            result = AnalysisResult(statistics.reference_group, statistics.model_mode, 'core3' + ''.join('+' + key for key in selected), asdict(measurements),
+            result = AnalysisResult(statistics.reference_group, statistics.model_mode, ('representative3' if calculation_profile == 'representative3' else 'core3' + ''.join('+' + key for key in selected)), asdict(measurements),
                 statistics.features, statistics.z_scores, statistics.distance, statistics.score,
                 quality.checks, quality.warnings, '公開統計量に基づく近似値であり、実測人口順位ではありません。',
                 '2', statistics.reference_model_version, statistics.regularization_used, statistics.volume_zone_score,
                 statistics.used_features, statistics.dimension, statistics.volume_zone_distribution)
-            logger.info("analysis completed successfully")
+            logger.info("analysis completed successfully profile=%s", result.profile_id)
             return result
         except AnalysisError:
             raise

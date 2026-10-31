@@ -10,7 +10,20 @@ let previewUrl = null;
 let volumeZoneChart = null;
 let featureRevision = 0;
 const chartContainer = document.querySelector('#volume-zone-chart-container');
+const profileInputs = form.querySelectorAll('[name="calculation_profile"]');
+profileInputs.forEach(input => input.addEventListener('change', () => {
+  const representative = form.elements.calculation_profile.value === 'representative3';
+  document.querySelector('#additional-features').disabled = representative;
+  document.querySelector('#additional-features').hidden = representative;
+  document.querySelector('#representative-notice').hidden = !representative;
+  featureRevision++;
+  result.hidden = true;
+  destroyVolumeZoneChart();
+}));
 const featureLabels = {
+  interpupillary_breadth_ratio: '瞳孔間隔 / 外眼角幅',
+  interocular_breadth_ratio: '内眼角幅 / 外眼角幅',
+  mouth_breadth_ratio: '口幅 / 外眼角幅',
   face_aspect_ratio: '顔の縦横比（実験的）',
   interpupillary_to_face_width_ratio: '瞳孔間隔 / 頬幅',
   interocular_to_face_width_ratio: '内眼角間隔 / 頬幅',
@@ -122,8 +135,12 @@ form.addEventListener('submit', async (event) => {
     document.querySelector('#distance').textContent = String(data.distance);
     document.querySelector('#volume-zone-score').textContent = String(data.volume_zone_score);
     document.querySelector('#result-group').textContent = groupLabel;
+    const representative = data.profile_id === 'representative3';
+    document.querySelector('#calculation-profile').textContent = representative ? '二次検討方式（代表3特徴・検証用）' : '従来方式';
     const selected = data.used_features.filter(key => key in featureLabels);
-    document.querySelector('#result-profile').textContent = ['基本3特徴', ...selected.map(key => featureLabels[key])].join(' + ');
+    document.querySelector('#result-profile').textContent = representative
+      ? selected.map(key => featureLabels[key]).join(' + ')
+      : ['基本3特徴', ...selected.filter(key => !['interpupillary_breadth_ratio', 'interocular_breadth_ratio', 'mouth_breadth_ratio'].includes(key)).map(key => featureLabels[key])].join(' + ');
     document.querySelector('#result-dimension').textContent = String(data.dimension);
     const aspectDetail = document.querySelector('#aspect-detail');
     aspectDetail.hidden = !data.used_features.includes('face_aspect_ratio');
