@@ -34,6 +34,7 @@ class AnalysisResult:
     algorithm_version: str
     reference_model_version: str
     regularization_used: bool
+    volume_zone_score: float
 
 
 class AnalysisService:
@@ -72,7 +73,7 @@ class AnalysisService:
             result = AnalysisResult(statistics.reference_group, statistics.model_mode, asdict(measurements),
                 statistics.features, statistics.z_scores, statistics.distance, statistics.score,
                 quality.checks, quality.warnings, '公開統計量に基づく近似値であり、実測人口順位ではありません。',
-                '1', statistics.reference_model_version, statistics.regularization_used)
+                '1', statistics.reference_model_version, statistics.regularization_used, statistics.volume_zone_score)
             logger.info("analysis completed successfully")
             return result
         except AnalysisError:

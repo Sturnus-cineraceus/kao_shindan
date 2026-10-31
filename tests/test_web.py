@@ -29,4 +29,8 @@ def test_index_form_and_assets():
         assert {attrs.get('value') for tag, attrs in parser.elements if tag == 'option'} >= {'young_male', 'young_female', 'older_male', 'older_female'}
         assert any(tag == 'button' and attrs.get('type') == 'submit' for tag, attrs in parser.elements)
         assert client.get('/static/app.js').status_code == 200
+        assert all(label in response.text for label in ('美形スコア', '平均顔距離', 'ボリュームゾーン度'))
+        assert all(any(attrs.get('id') == element for _, attrs in parser.elements) for element in ('score', 'distance', 'volume-zone-score'))
+        script = client.get('/static/app.js').text
+        assert "data.volume_zone_score" in script and "data.distance" in script
         assert client.get('/static/style.css').status_code == 200

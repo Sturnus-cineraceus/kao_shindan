@@ -12,7 +12,7 @@ from app.reference_data import (
     parse_reference_data,
 )
 from app.statistics import FEATURE_KEYS, ModelError, build_reference_model, compare_features
-from app.statistics.models import DENOMINATOR_KEY, NUMERATOR_KEYS
+from app.statistics.models import DENOMINATOR_KEY, NUMERATOR_KEYS, _volume_zone_score
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -79,6 +79,7 @@ def test_each_reference_group_builds_and_calculates(group):
     assert result.reference_model_version == "summary_delta_v1"
     assert np.isfinite(result.distance)
     assert np.isfinite(result.score)
+    assert np.isfinite(result.volume_zone_score)
 
 
 def test_mean_vector_has_zero_z_and_distance_and_score_near_100():
@@ -86,6 +87,8 @@ def test_mean_vector_has_zero_z_and_distance_and_score_near_100():
     result = compare_features("young_male", dict(zip(FEATURE_KEYS, model.mean)))
     assert result.distance == pytest.approx(0.0, abs=1e-12)
     assert result.score == pytest.approx(100.0)
+    assert result.volume_zone_score == pytest.approx(0.0)
+    assert result.features == dict(zip(FEATURE_KEYS, model.mean))
     assert list(result.z_scores) == list(FEATURE_KEYS)
     assert all(value == pytest.approx(0.0, abs=1e-12) for value in result.z_scores.values())
 
@@ -99,6 +102,31 @@ def test_distance_increase_lowers_score_and_uses_correlated_distance():
     delta = np.array([0.1, 0.1, 0.1])
     expected = np.sqrt(delta @ np.linalg.solve(model.covariance, delta))
     assert far.distance == pytest.approx(expected)
+
+
+@pytest.mark.parametrize("distance", [0, 0.1, 1, np.sqrt(2), 2, 10, 100])
+def test_volume_zone_score_is_finite_and_bounded(distance):
+    value = _volume_zone_score(distance)
+    assert np.isfinite(value)
+    assert 0 <= value <= 100
+
+
+def test_volume_zone_score_at_mode_and_tails():
+    assert _volume_zone_score(0) == pytest.approx(0)
+    assert _volume_zone_score(np.sqrt(2)) == pytest.approx(100)
+    assert _volume_zone_score(10) == pytest.approx(0, abs=1e-12)
+    model = build_reference_model("young_male")
+    # Cholesky column produces a displacement at the requested Mahalanobis distance.
+    features = model.mean + np.sqrt(2) * np.linalg.cholesky(model.covariance)[:, 0]
+    result = compare_features("young_male", features)
+    assert result.distance == pytest.approx(np.sqrt(2))
+    assert result.volume_zone_score == pytest.approx(100)
+
+
+@pytest.mark.parametrize("distance", [float("nan"), float("inf"), -1])
+def test_volume_zone_rejects_invalid_distances(distance):
+    with pytest.raises(ModelError):
+        _volume_zone_score(distance)
 
 
 @pytest.mark.parametrize("bad", [

@@ -31,8 +31,15 @@
   <p id="error" role="alert" hidden></p>
   <section id="result" aria-labelledby="result-title" hidden>
     <h2 id="result-title">解析結果</h2>
-    <p>平均顔近似スコア</p>
+    <p>美形スコア</p>
     <p class="score" id="score"></p>
+    <p>平均顔に近いほど美しいという本アプリの仮説に基づく近似スコアです。実測された美醜ではありません。</p>
+    <h3>平均顔距離</h3>
+    <p id="distance"></p>
+    <p>参照集団の平均顔からの統計的な距離です。小さいほど平均に近いことを示します。</p>
+    <h3>ボリュームゾーン度</h3>
+    <p id="volume-zone-score"></p>
+    <p>同程度の平均顔距離を持つ顔が近似モデル上どの程度現れやすいかを示します。100付近が最も集まりやすい距離帯です。</p>
     <p>参照集団：<span id="result-group"></span></p>
     <p>100に近いほど、この参照集団の平均的な顔形態に近いことを示します。</p>
     <p id="notice"></p>

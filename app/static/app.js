@@ -65,6 +65,8 @@ form.addEventListener('submit', async (event) => {
       return;
     }
     document.querySelector('#score').textContent = String(data.score);
+    document.querySelector('#distance').textContent = String(data.distance);
+    document.querySelector('#volume-zone-score').textContent = String(data.volume_zone_score);
     document.querySelector('#result-group').textContent = groupLabel;
     document.querySelector('#notice').textContent = data.approximation_notice;
     document.querySelector('#quality-warnings').textContent = [...new Set((data.quality_warnings || []).map(warning => warning.message))].join('\n');

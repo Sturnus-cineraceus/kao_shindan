@@ -41,7 +41,8 @@ validationの点集合、姿勢算出規約、画質評価前処理と初期閾�
 | `features` | 無次元比率。statistics `FEATURE_KEYS` のキーと順序を維持する |
 | `z_scores` | statistics層の項目別近似zスコアをそのまま引き継ぐ |
 | `distance` | statistics層の距離をそのまま引き継ぐ |
-| `score` | statistics層のスコアをそのまま引き継ぐ |
+| `score` | statistics層の美形スコアをそのまま引き継ぐ |
+| `volume_zone_score` | statistics層のボリュームゾーン度をそのまま引き継ぐ |
 | `quality_warnings` | 検証成功時の品質警告。安定したコードと日本語メッセージを保持する |
 | `quality_checks` | 実施したチェック、通過可否、必要に応じ判定値を追跡可能にする。詳細型は実装時に定める |
 | `approximation_notice` | UIが公開統計量由来の近似値で、実測人口順位ではないと表示するための情報 |

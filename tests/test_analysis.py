@@ -44,6 +44,8 @@ def test_api_success(client):
     result = response.json()
     assert result['reference_group'] == 'young_female'
     assert 0 <= result['score'] <= 100
+    assert 0 <= result['volume_zone_score'] <= 100
+    assert {'distance', 'z_scores', 'features', 'model_mode', 'regularization_used'} <= result.keys()
     assert result['reference_model_version'] and result['algorithm_version']
     assert 'faces' not in result
 

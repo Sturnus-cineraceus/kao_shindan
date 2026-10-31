@@ -7,7 +7,7 @@ from typing import Mapping, Sequence
 
 import numpy as np
 from numpy.typing import NDArray
-from scipy.stats import chi2
+from scipy.stats import chi, chi2
 
 from app.reference_data import MEASUREMENT_KEYS, ReferenceData, ReferenceDataError, load_reference_data
 
@@ -50,6 +50,7 @@ class StatisticsResult:
     score: float
     regularization_used: bool
     reference_model_version: str
+    volume_zone_score: float
 
 
 def _finite_positive(value: float, label: str) -> float:
@@ -129,6 +130,16 @@ def _coerce_features(values: Mapping[str, float] | Sequence[float]) -> FloatArra
     return vector
 
 
+def _volume_zone_score(distance: float) -> float:
+    if not np.isfinite(distance) or distance < 0:
+        raise ModelError("Distance must be finite and non-negative")
+    # 三次元の距離は自由度3のカイ分布に従い、その最頻値は sqrt(2)。
+    value = float(100.0 * chi.pdf(distance, df=3) / chi.pdf(np.sqrt(2.0), df=3))
+    if not np.isfinite(value):
+        raise ModelError("Volume zone calculation produced a non-finite value")
+    return max(0.0, min(100.0, value))
+
+
 def compare_features(
     reference_group: str,
     features: Mapping[str, float] | Sequence[float],
@@ -179,4 +190,5 @@ def compare_features(
         score=score,
         regularization_used=regularization_used,
         reference_model_version=model.reference_model_version,
+        volume_zone_score=_volume_zone_score(distance),
     )
