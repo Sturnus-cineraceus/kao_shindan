@@ -148,8 +148,8 @@ def _coerce_features(values: Mapping[str, float] | Sequence[float], keys: tuple[
 def _volume_zone_score(distance: float, dimension: int = 3) -> float:
     if not np.isfinite(distance) or distance < 0:
         raise ModelError("Distance must be finite and non-negative")
-    if not isinstance(dimension, int) or dimension < 1:
-        raise ModelError("Dimension must be a positive integer")
+    if not isinstance(dimension, int) or dimension < 3:
+        raise ModelError("Dimension must be an integer greater than or equal to 3")
     mode = float(np.sqrt(dimension - 1))
     peak = float(chi.pdf(mode, df=dimension))
     if not np.isfinite(peak) or peak <= 0:

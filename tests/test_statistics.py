@@ -124,7 +124,7 @@ def test_core3_legacy_scores_and_distribution(distance):
     assert _volume_zone_score(distribution.mode_distance, result.dimension) == pytest.approx(100)
 
 
-@pytest.mark.parametrize("dimension", [1, 2, 4, 8])
+@pytest.mark.parametrize("dimension", [3, 4, 5, 8])
 def test_distribution_uses_dimension(dimension):
     distribution = _volume_zone_distribution(1, dimension)
     assert distribution.mode_distance == pytest.approx(np.sqrt(dimension - 1))
@@ -132,6 +132,14 @@ def test_distribution_uses_dimension(dimension):
     assert distribution.points[-1].distance >= chi.ppf(0.999, df=dimension)
     assert distribution.points[25].relative_density == pytest.approx(
         100 * chi.pdf(distribution.points[25].distance, df=dimension) / chi.pdf(distribution.mode_distance, df=dimension))
+
+
+@pytest.mark.parametrize("dimension", [0, 1, 2])
+def test_volume_zone_rejects_dimensions_below_core3(dimension):
+    with pytest.raises(ModelError):
+        _volume_zone_score(1, dimension)
+    with pytest.raises(ModelError):
+        _volume_zone_distribution(1, dimension)
 
 
 def test_distribution_rejects_invalid_calculation(monkeypatch):
