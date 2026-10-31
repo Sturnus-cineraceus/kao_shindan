@@ -43,6 +43,9 @@ validationの点集合、姿勢算出規約、画質評価前処理と初期閾�
 | `distance` | statistics層の距離をそのまま引き継ぐ |
 | `score` | statistics層の美形スコアをそのまま引き継ぐ |
 | `volume_zone_score` | statistics層のボリュームゾーン度をそのまま引き継ぐ |
+| `used_features` | 統計計算に使用した特徴IDをモデルの順序で並べた配列 |
+| `dimension` | 使用した特徴数。現在のcore3では3 |
+| `volume_zone_distribution` | `mode_distance` と、`distance`・`relative_density` を持つ101個の `points`。statistics層の計算結果をそのまま引き継ぐ |
 | `quality_warnings` | 検証成功時の品質警告。安定したコードと日本語メッセージを保持する |
 | `quality_checks` | 実施したチェック、通過可否、必要に応じ判定値を追跡可能にする。詳細型は実装時に定める |
 | `approximation_notice` | UIが公開統計量由来の近似値で、実測人口順位ではないと表示するための情報 |
@@ -53,6 +56,8 @@ validationの点集合、姿勢算出規約、画質評価前処理と初期閾�
 `measurements` のキーは `interpupillary_breadth`、`interocular_breadth`、`biectocanthion_breadth`、`mouth_breadth`。単位は抽出に使った正規化画像上のpixelである。比率キーと順序は `statistics.FEATURE_KEYS` の `interpupillary_breadth_ratio`、`interocular_breadth_ratio`、`mouth_breadth_ratio` とする。statisticsの `StatisticsResult.features` を結果へ統合し、比率の再計算や値の意味変更をしない。
 
 `algorithm_version` は前処理、使用ランドマーク、距離算出、比率定義、validation規則など画像由来の特徴生成処理を追跡する。参照統計の版とは別概念であり、`reference_model_version` を使って参照データ／モデルを追跡する。初期値は `1` とし、複雑な採番方式は追加しない。MVPの `model_mode` は `summary_delta` とし、その式はstatistics層だけが所有する。解析サービスは統計式を再実装しない。
+
+フロントエンドは分布グラフにAPIが返す計算済み点列を使用し、統計式を再実装しない。グラフ描画自体は次のスコープとする。
 
 ## 失敗と例外境界
 

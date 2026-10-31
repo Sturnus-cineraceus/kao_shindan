@@ -9,6 +9,7 @@ from app.feature_extraction import extract_measurements, build_features, Feature
 from app.reference_data import load_reference_data, ReferenceDataError
 from app.reference_data.loader import EXPECTED_GROUPS
 from app.statistics import compare_features, ModelError
+from app.statistics.models import VolumeZoneDistribution
 
 logger = logging.getLogger(__name__)
 
@@ -35,6 +36,9 @@ class AnalysisResult:
     reference_model_version: str
     regularization_used: bool
     volume_zone_score: float
+    used_features: tuple[str, ...]
+    dimension: int
+    volume_zone_distribution: VolumeZoneDistribution
 
 
 class AnalysisService:
@@ -73,7 +77,8 @@ class AnalysisService:
             result = AnalysisResult(statistics.reference_group, statistics.model_mode, asdict(measurements),
                 statistics.features, statistics.z_scores, statistics.distance, statistics.score,
                 quality.checks, quality.warnings, '公開統計量に基づく近似値であり、実測人口順位ではありません。',
-                '1', statistics.reference_model_version, statistics.regularization_used, statistics.volume_zone_score)
+                '1', statistics.reference_model_version, statistics.regularization_used, statistics.volume_zone_score,
+                statistics.used_features, statistics.dimension, statistics.volume_zone_distribution)
             logger.info("analysis completed successfully")
             return result
         except AnalysisError:

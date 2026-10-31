@@ -11,6 +11,7 @@ from app.landmarks import FaceLandmarkerService
 from app.main import app
 from app.validation import CheckResult, ValidationResult, ValidationConfig, validate
 from app.feature_extraction import extract_measurements, build_features
+from app.statistics import FEATURE_KEYS
 
 FIXTURE = Path(__file__).parent / 'fixtures' / 'portrait_female_young_adult_01.png'
 MODEL = Path('/opt/kao-cal/models/face_landmarker.task')
@@ -46,6 +47,10 @@ def test_api_success(client):
     assert 0 <= result['score'] <= 100
     assert 0 <= result['volume_zone_score'] <= 100
     assert {'distance', 'z_scores', 'features', 'model_mode', 'regularization_used'} <= result.keys()
+    assert result['used_features'] == list(FEATURE_KEYS)
+    assert result['dimension'] == 3
+    assert result['volume_zone_distribution']['mode_distance'] == pytest.approx(math.sqrt(2))
+    assert len(result['volume_zone_distribution']['points']) == 101
     assert result['reference_model_version'] and result['algorithm_version']
     assert 'faces' not in result
 

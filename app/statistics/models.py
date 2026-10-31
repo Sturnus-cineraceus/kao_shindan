@@ -32,12 +32,24 @@ class ModelError(ValueError):
 class ReferenceModel:
     reference_group: str
     model_mode: str
-    features: tuple[str, str, str]
+    features: tuple[str, ...]
     mean: FloatArray
     covariance: FloatArray
     standard_deviations: FloatArray
     reference_model_version: str
     epsilon: float
+
+
+@dataclass(frozen=True)
+class VolumeZonePoint:
+    distance: float
+    relative_density: float
+
+
+@dataclass(frozen=True)
+class VolumeZoneDistribution:
+    mode_distance: float
+    points: tuple[VolumeZonePoint, ...]
 
 
 @dataclass(frozen=True)
@@ -51,6 +63,9 @@ class StatisticsResult:
     regularization_used: bool
     reference_model_version: str
     volume_zone_score: float
+    used_features: tuple[str, ...]
+    dimension: int
+    volume_zone_distribution: VolumeZoneDistribution
 
 
 def _finite_positive(value: float, label: str) -> float:
@@ -107,11 +122,11 @@ def build_reference_model(
     )
 
 
-def _coerce_features(values: Mapping[str, float] | Sequence[float]) -> FloatArray:
+def _coerce_features(values: Mapping[str, float] | Sequence[float], keys: tuple[str, ...]) -> FloatArray:
     if isinstance(values, Mapping):
-        if set(values) != set(FEATURE_KEYS):
-            raise ModelError(f"features must contain exactly {FEATURE_KEYS!r}")
-        raw = [values[key] for key in FEATURE_KEYS]
+        if set(values) != set(keys):
+            raise ModelError(f"features must contain exactly {keys!r}")
+        raw = [values[key] for key in keys]
     else:
         if isinstance(values, (str, bytes)):
             raise ModelError("features must contain exactly three numeric values")
@@ -119,25 +134,43 @@ def _coerce_features(values: Mapping[str, float] | Sequence[float]) -> FloatArra
             raw = list(values)
         except TypeError as exc:
             raise ModelError("features must contain exactly three numeric values") from exc
-        if len(raw) != 3:
-            raise ModelError("features must contain exactly three numeric values in FEATURE_KEYS order")
+        if len(raw) != len(keys):
+            raise ModelError("features must match the model feature count and order")
     try:
         vector = np.asarray(raw, dtype=np.float64)
     except (TypeError, ValueError) as exc:
         raise ModelError("features must be numeric") from exc
-    if vector.shape != (3,) or not np.isfinite(vector).all():
-        raise ModelError("features must contain exactly three finite numeric values")
+    if vector.shape != (len(keys),) or not np.isfinite(vector).all():
+        raise ModelError("features must contain finite numeric values for each model feature")
     return vector
 
 
-def _volume_zone_score(distance: float) -> float:
+def _volume_zone_score(distance: float, dimension: int = 3) -> float:
     if not np.isfinite(distance) or distance < 0:
         raise ModelError("Distance must be finite and non-negative")
-    # 三次元の距離は自由度3のカイ分布に従い、その最頻値は sqrt(2)。
-    value = float(100.0 * chi.pdf(distance, df=3) / chi.pdf(np.sqrt(2.0), df=3))
+    if not isinstance(dimension, int) or dimension < 1:
+        raise ModelError("Dimension must be a positive integer")
+    mode = float(np.sqrt(dimension - 1))
+    peak = float(chi.pdf(mode, df=dimension))
+    if not np.isfinite(peak) or peak <= 0:
+        raise ModelError("Volume zone peak must be finite and positive")
+    value = float(100.0 * chi.pdf(distance, df=dimension) / peak)
     if not np.isfinite(value):
         raise ModelError("Volume zone calculation produced a non-finite value")
     return max(0.0, min(100.0, value))
+
+
+def _volume_zone_distribution(distance: float, dimension: int) -> VolumeZoneDistribution:
+    _volume_zone_score(distance, dimension)  # Validate before constructing the range.
+    mode = float(np.sqrt(dimension - 1))
+    maximum = max(float(chi.ppf(0.999, df=dimension)), distance * 1.05, mode * 1.05)
+    if not np.isfinite(maximum) or maximum <= 0:
+        raise ModelError("Distribution range must be finite and positive")
+    points = tuple(VolumeZonePoint(float(x), _volume_zone_score(float(x), dimension))
+                   for x in np.linspace(0.0, maximum, 101))
+    if any(not np.isfinite(point.distance) for point in points):
+        raise ModelError("Distribution contains non-finite distances")
+    return VolumeZoneDistribution(mode, points)
 
 
 def compare_features(
@@ -149,7 +182,8 @@ def compare_features(
 ) -> StatisticsResult:
     """Return approximate z scores, Mahalanobis distance, and chi-square score."""
     model = build_reference_model(reference_group, reference_data, epsilon=epsilon)
-    observed = _coerce_features(features)
+    dimension = len(model.features)
+    observed = _coerce_features(features, model.features)
     delta = observed - model.mean
     try:
         np.linalg.cholesky(model.covariance)
@@ -178,7 +212,7 @@ def compare_features(
             raise ModelError("Distance squared is materially negative")
         d_squared = 0.0
     distance = float(np.sqrt(d_squared))
-    score = float(100.0 * chi2.sf(d_squared, df=3))
+    score = float(100.0 * chi2.sf(d_squared, df=dimension))
     if not np.isfinite(score):
         raise ModelError("Score calculation produced a non-finite value")
     return StatisticsResult(
@@ -190,5 +224,8 @@ def compare_features(
         score=score,
         regularization_used=regularization_used,
         reference_model_version=model.reference_model_version,
-        volume_zone_score=_volume_zone_score(distance),
+        volume_zone_score=_volume_zone_score(distance, dimension),
+        used_features=model.features,
+        dimension=dimension,
+        volume_zone_distribution=_volume_zone_distribution(distance, dimension),
     )

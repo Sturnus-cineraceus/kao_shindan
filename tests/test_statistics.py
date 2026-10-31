@@ -3,6 +3,7 @@ from pathlib import Path
 
 import numpy as np
 import pytest
+from scipy.stats import chi, chi2
 
 from app.reference_data import (
     MEASUREMENT_KEYS,
@@ -12,7 +13,7 @@ from app.reference_data import (
     parse_reference_data,
 )
 from app.statistics import FEATURE_KEYS, ModelError, build_reference_model, compare_features
-from app.statistics.models import DENOMINATOR_KEY, NUMERATOR_KEYS, _volume_zone_score
+from app.statistics.models import DENOMINATOR_KEY, NUMERATOR_KEYS, _volume_zone_score, _volume_zone_distribution
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -102,6 +103,41 @@ def test_distance_increase_lowers_score_and_uses_correlated_distance():
     delta = np.array([0.1, 0.1, 0.1])
     expected = np.sqrt(delta @ np.linalg.solve(model.covariance, delta))
     assert far.distance == pytest.approx(expected)
+
+
+@pytest.mark.parametrize("distance", [0.0, 0.5, np.sqrt(2), 3.0, 10.0])
+def test_core3_legacy_scores_and_distribution(distance):
+    model = build_reference_model("young_male")
+    features = model.mean + distance * np.linalg.cholesky(model.covariance)[:, 0]
+    result = compare_features("young_male", features)
+    assert result.dimension == 3
+    assert result.used_features == FEATURE_KEYS
+    assert result.score == pytest.approx(100 * chi2.sf(result.distance ** 2, df=3))
+    assert result.volume_zone_score == pytest.approx(100 * chi.pdf(result.distance, df=3) / chi.pdf(np.sqrt(2), df=3))
+    distribution = result.volume_zone_distribution
+    assert distribution.mode_distance == pytest.approx(np.sqrt(2))
+    assert len(distribution.points) == 101
+    assert distribution.points[0].distance == 0
+    assert all(a.distance < b.distance for a, b in zip(distribution.points, distribution.points[1:]))
+    assert all(np.isfinite(p.relative_density) and 0 <= p.relative_density <= 100 for p in distribution.points)
+    assert distribution.points[-1].distance >= result.distance
+    assert _volume_zone_score(distribution.mode_distance, result.dimension) == pytest.approx(100)
+
+
+@pytest.mark.parametrize("dimension", [1, 2, 4, 8])
+def test_distribution_uses_dimension(dimension):
+    distribution = _volume_zone_distribution(1, dimension)
+    assert distribution.mode_distance == pytest.approx(np.sqrt(dimension - 1))
+    assert _volume_zone_score(distribution.mode_distance, dimension) == pytest.approx(100)
+    assert distribution.points[-1].distance >= chi.ppf(0.999, df=dimension)
+    assert distribution.points[25].relative_density == pytest.approx(
+        100 * chi.pdf(distribution.points[25].distance, df=dimension) / chi.pdf(distribution.mode_distance, df=dimension))
+
+
+def test_distribution_rejects_invalid_calculation(monkeypatch):
+    monkeypatch.setattr(chi, 'ppf', lambda *args, **kwargs: float('nan'))
+    with pytest.raises(ModelError):
+        _volume_zone_distribution(1, 3)
 
 
 @pytest.mark.parametrize("distance", [0, 0.1, 1, np.sqrt(2), 2, 10, 100])
