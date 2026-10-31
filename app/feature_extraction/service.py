@@ -80,3 +80,30 @@ def build_features(measurements: FaceMeasurements) -> FaceFeatures:
             raise FeatureExtractionError(f"{name} ratio is not finite")
         ratios.append(ratio)
     return FaceFeatures(*ratios)
+
+
+# AISTの形態学顔高・頬弓幅に対応させる写真上の代理点。
+FACE_ASPECT_LANDMARKS = frozenset((168, 152, 234, 454))
+
+
+def extract_face_aspect_ratio(landmarks: Sequence[FaceLandmark], image_width: int, image_height: int) -> float:
+    """写真上の代理点をピクセル距離に変換し、顔の縦横比を近似する。"""
+    if image_width <= 0 or image_height <= 0:
+        raise FeatureExtractionError("image dimensions must be positive")
+    coordinates = {}
+    for index in FACE_ASPECT_LANDMARKS:
+        if index >= len(landmarks):
+            raise FeatureExtractionError(f"required landmark index is missing: {index}")
+        coordinates[index] = (_finite_coordinate(landmarks[index].x, f"landmark {index}.x"),
+                              _finite_coordinate(landmarks[index].y, f"landmark {index}.y"))
+
+    def distance(a: int, b: int) -> float:
+        return pixel_distance(*coordinates[a], *coordinates[b], image_width, image_height)
+
+    height, width = distance(168, 152), distance(234, 454)
+    if not math.isfinite(width) or width <= 0:
+        raise FeatureExtractionError("face width must be finite and positive")
+    ratio = height / width
+    if not math.isfinite(ratio) or ratio <= 0:
+        raise FeatureExtractionError("face aspect ratio must be finite and positive")
+    return ratio

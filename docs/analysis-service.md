@@ -4,7 +4,7 @@
 
 ## 入力と責務
 
-解析要求は画像 `bytes` と `reference_group` からなる。参照群はユーザーが明示選択する `young_male`、`young_female`、`older_male`、`older_female` のいずれかで、画像から性別や年齢を推定して選ばない。未知のIDは拒否し、35〜59歳を別群へ自動割当てしない。
+解析要求は画像 `bytes`、`reference_group`、任意の `additional_features` からなる。追加特徴は `face_aspect_ratio` のみを許可し、未知IDと重複を拒否する。参照群はユーザーが明示選択する `young_male`、`young_female`、`older_male`、`older_female` のいずれかで、画像から性別や年齢を推定して選ばない。未知のIDは拒否し、35〜59歳を別群へ自動割当てしない。
 
 Web層はリクエスト値の構文・必須性を検証し、アップロードから得たbytesと参照群IDを渡す。解析サービスも参照データ境界でIDの妥当性を確認し、不正な群では処理を始めない。`Request`、`UploadFile`、`HTMLResponse`、`TemplateResponse`、Jinja2型はサービス契約に含めない。
 
@@ -16,7 +16,7 @@ Web層はリクエスト値の構文・必須性を検証し、アップロー�
   → Face Landmarker（LandmarkResult）
   → validation・roll座標補正
   → 4距離の抽出（measurements）
-  → 3比率の生成（features）
+  → 3比率と選択された追加比率の生成（features）
   → statistics（compare_features）
   → 型付き解析成功結果
 ```
@@ -37,6 +37,7 @@ validationの点集合、姿勢算出規約、画質評価前処理と初期閾�
 | --- | --- |
 | `reference_group` | 選択された比較集団。statistics結果の値と一致する |
 | `model_mode` | 統計方式。MVPは `summary_delta`。将来 `empirical` に交換できる境界を保つ |
+| `profile_id` | `core3` または `core3+face_aspect_ratio` |
 | `measurements` | pixel単位の4距離。後述のキーを使う |
 | `features` | 無次元比率。statistics `FEATURE_KEYS` のキーと順序を維持する |
 | `z_scores` | statistics層の項目別近似zスコアをそのまま引き継ぐ |
@@ -55,7 +56,9 @@ validationの点集合、姿勢算出規約、画質評価前処理と初期閾�
 
 `measurements` のキーは `interpupillary_breadth`、`interocular_breadth`、`biectocanthion_breadth`、`mouth_breadth`。単位は抽出に使った正規化画像上のpixelである。比率キーと順序は `statistics.FEATURE_KEYS` の `interpupillary_breadth_ratio`、`interocular_breadth_ratio`、`mouth_breadth_ratio` とする。statisticsの `StatisticsResult.features` を結果へ統合し、比率の再計算や値の意味変更をしない。
 
-`algorithm_version` は前処理、使用ランドマーク、距離算出、比率定義、validation規則など画像由来の特徴生成処理を追跡する。参照統計の版とは別概念であり、`reference_model_version` を使って参照データ／モデルを追跡する。初期値は `1` とし、複雑な採番方式は追加しない。MVPの `model_mode` は `summary_delta` とし、その式はstatistics層だけが所有する。解析サービスは統計式を再実装しない。
+`algorithm_version` は画像由来の特徴生成処理を追跡し、現在は `2` とする。参照統計の版とは別概念であり、`reference_model_version` を使って参照データ／モデルを追跡する。MVPの `model_mode` は `summary_delta` とし、その式はstatistics層だけが所有する。
+
+multipart入力は `image` と `reference_group` を各1件、`additional_feature` を0件以上受け付ける。同じ追加特徴の重複と未知IDは `400 invalid_feature_selection` とする。`profile_id` と `dimension` は入力として受け付けず、選択から決定する。
 
 フロントエンドは分布グラフにAPIが返す計算済み点列を使用し、統計式を再実装しない。結果画面では点列に加えてAPIの距離、ボリュームゾーン度、最頻距離を表示する。
 
@@ -94,7 +97,7 @@ POST /analyze
 
 ## HTTP APIと実行時の契約
 
-`POST /analyze` は `multipart/form-data` の `image`（JPEGまたはPNGのファイル）と `reference_group`（文字列）を必須とし、成功時に内部成功結果をJSONで返す。生ランドマークは返さない。画像はメモリ内でのみ受信し、本文上限は画像上限20 MiBにフォームの余裕64 KiBを加えた値とする。フォームの重複・不正な構造、必須項目の欠落は `400 invalid_request`、未知の参照群は `400 invalid_reference_group`、画像の形式・デコード不正は `400 invalid_image`、入力サイズ・寸法制限違反は `413 image_size_limit` とする。
+`POST /analyze` は `multipart/form-data` の `image`（JPEGまたはPNGのファイル）と `reference_group`（文字列）を各1件必須とし、任意の `additional_feature` を複数件受け付ける。成功時に内部成功結果をJSONで返す。生ランドマークは返さない。画像はメモリ内でのみ受信し、本文上限は画像上限20 MiBにフォームの余裕64 KiBを加えた値とする。必須項目の重複、不正な構造、必須項目の欠落は `400 invalid_request`、追加特徴の未知IDまたは重複は `400 invalid_feature_selection`、未知の参照群は `400 invalid_reference_group`、画像の形式・デコード不正は `400 invalid_image`、入力サイズ・寸法制限違反は `413 image_size_limit` とする。
 
 顔なし、複数顔、その他の品質不合格はそれぞれ `422 no_face`、`422 multiple_faces`、`422 validation_failed` とし、失敗したチェック名と理由を `checks` に返す。顔数を最優先し、その他は実行順に並べる。モデルのロード失敗は `503 model_unavailable`、その他の内部解析失敗は `500 analysis_error` とし、内部詳細を返さない。エラーは `{"error":{"code":...,"message":...,"checks":[...]}}` の形とし、チェックがない場合は空配列とする。ブラウザーからのクロスオリジン送信はOriginを同一オリジンに制限する。認証やCookieを用いないAPIであり、Originのない非ブラウザクライアントも受け付ける。
 

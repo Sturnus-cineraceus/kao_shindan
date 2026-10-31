@@ -17,6 +17,7 @@ from app.analysis import AnalysisError, AnalysisService
 from app.image_processing.decoder import MAX_INPUT_BYTES
 from app.landmarks import FaceLandmarkerService
 from app.logging_config import configure_logging
+from app.statistics.models import validate_additional_features, ModelError
 
 logger = configure_logging()
 
@@ -91,11 +92,15 @@ async def analyze(request: Request):
     if not message.is_multipart() or message.defects:
         return error('invalid_request', 400)
     fields = {}
+    additional_features = []
     for part in message.iter_parts():
         name = part.get_param('name', header='content-disposition')
-        if name not in ('image', 'reference_group') or name in fields or part.is_multipart():
+        if name not in ('image', 'reference_group', 'additional_feature') or (name != 'additional_feature' and name in fields) or part.is_multipart():
             return error('invalid_request', 400)
-        fields[name] = part.get_payload(decode=True)
+        if name == 'additional_feature':
+            additional_features.append(part.get_payload(decode=True))
+        else:
+            fields[name] = part.get_payload(decode=True)
     if set(fields) != {'image', 'reference_group'} or any(value is None for value in fields.values()):
         return error('invalid_request', 400)
     try:
@@ -103,9 +108,16 @@ async def analyze(request: Request):
     except UnicodeDecodeError:
         return error('invalid_reference_group', 400)
     try:
-        result = await run_in_threadpool(request.app.state.analysis_service.analyze, fields['image'], group)
+        selected = validate_additional_features(tuple(value.decode('utf-8') for value in additional_features))
+    except (UnicodeDecodeError, AttributeError, ModelError):
+        return error('invalid_feature_selection', 400)
+    try:
+        if selected:
+            result = await run_in_threadpool(request.app.state.analysis_service.analyze, fields['image'], group, selected)
+        else:
+            result = await run_in_threadpool(request.app.state.analysis_service.analyze, fields['image'], group)
     except AnalysisError as exc:
-        status = {'invalid_reference_group': 400, 'invalid_image': 400, 'image_size_limit': 413,
+        status = {'invalid_feature_selection': 400, 'invalid_reference_group': 400, 'invalid_image': 400, 'image_size_limit': 413,
                   'no_face': 422, 'multiple_faces': 422, 'validation_failed': 422,
                   'model_unavailable': 503, 'analysis_error': 500}.get(exc.code, 500)
         return error(exc.code, status, exc.checks)

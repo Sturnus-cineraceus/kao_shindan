@@ -9,7 +9,8 @@ from app.feature_extraction import extract_measurements, build_features, Feature
 from app.reference_data import load_reference_data, ReferenceDataError
 from app.reference_data.loader import EXPECTED_GROUPS
 from app.statistics import compare_features, ModelError
-from app.statistics.models import VolumeZoneDistribution
+from app.statistics.models import VolumeZoneDistribution, validate_additional_features
+from app.feature_extraction.service import FACE_ASPECT_LANDMARKS, extract_face_aspect_ratio
 
 logger = logging.getLogger(__name__)
 
@@ -24,6 +25,7 @@ class AnalysisError(Exception):
 class AnalysisResult:
     reference_group: str
     model_mode: str
+    profile_id: str
     measurements: dict
     features: dict
     z_scores: dict
@@ -44,18 +46,23 @@ class AnalysisResult:
 class AnalysisService:
     def __init__(self, landmarker): self.landmarker = landmarker
 
-    def analyze(self, data: bytes, reference_group: str) -> AnalysisResult:
+    def analyze(self, data: bytes, reference_group: str, additional_features: tuple[str, ...] = ()) -> AnalysisResult:
         logger.info("analysis started")
         logger.debug("input image bytes=%d", len(data))
         if reference_group not in EXPECTED_GROUPS:
             logger.warning("analysis rejected: invalid reference group")
             raise AnalysisError('invalid_reference_group')
         try:
+            selected = validate_additional_features(additional_features)
+        except ModelError as exc:
+            raise AnalysisError('invalid_feature_selection') from exc
+        try:
             image = decode_image(data)
             logger.debug("image decoded width=%d height=%d", image.width, image.height)
             landmarks = self.landmarker.analyze(image)
             logger.debug("faces detected count=%d", landmarks.face_count)
-            quality = validate(image, landmarks)
+            quality = (validate(image, landmarks, additional_required_landmarks=FACE_ASPECT_LANDMARKS)
+                       if selected else validate(image, landmarks))
             for check in quality.checks:
                 logger.debug("validation name=%s passed=%s value=%s threshold=%s missing_ids=%s",
                              check.name, check.passed, check.value, check.threshold, check.missing_ids)
@@ -70,14 +77,17 @@ class AnalysisService:
             logger.debug("measurements=%s", asdict(measurements))
             features = build_features(measurements)
             logger.debug("features=%s", features.as_dict())
+            feature_values = features.as_dict()
+            if 'face_aspect_ratio' in selected:
+                feature_values['face_aspect_ratio'] = extract_face_aspect_ratio(quality.analysis_landmarks, image.width, image.height)
             reference = load_reference_data()
             logger.debug("reference data loaded group=%s", reference_group)
-            statistics = compare_features(reference_group, features.as_dict(), reference_data=reference)
+            statistics = compare_features(reference_group, feature_values, reference_data=reference, additional_features=selected)
             logger.debug("z_scores=%s distance=%s score=%s", statistics.z_scores, statistics.distance, statistics.score)
-            result = AnalysisResult(statistics.reference_group, statistics.model_mode, asdict(measurements),
+            result = AnalysisResult(statistics.reference_group, statistics.model_mode, 'core3' + ''.join('+' + key for key in selected), asdict(measurements),
                 statistics.features, statistics.z_scores, statistics.distance, statistics.score,
                 quality.checks, quality.warnings, '公開統計量に基づく近似値であり、実測人口順位ではありません。',
-                '1', statistics.reference_model_version, statistics.regularization_used, statistics.volume_zone_score,
+                '2', statistics.reference_model_version, statistics.regularization_used, statistics.volume_zone_score,
                 statistics.used_features, statistics.dimension, statistics.volume_zone_distribution)
             logger.info("analysis completed successfully")
             return result

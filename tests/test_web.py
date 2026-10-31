@@ -22,6 +22,10 @@ def test_index_form_and_assets():
         parser = FormParser()
         parser.feed(response.text)
         inputs = [attrs for tag, attrs in parser.elements if tag == 'input']
+        checkboxes = [x for x in inputs if x.get('type') == 'checkbox']
+        assert len(checkboxes) == 1
+        assert checkboxes[0].get('name') == 'additional_feature' and checkboxes[0].get('value') == 'face_aspect_ratio'
+        assert all(any(attrs.get('id') == element for _, attrs in parser.elements) for element in ('result-profile', 'result-dimension'))
         assert any(x.get('name') == 'image' and x.get('type') == 'file' and x.get('accept') == 'image/jpeg,image/png' and 'required' in x for x in inputs)
         assert any(tag == 'div' and attrs.get('id') == 'image-preview' and 'hidden' in attrs for tag, attrs in parser.elements)
         assert any(tag == 'img' and attrs.get('id') == 'image-preview-image' for tag, attrs in parser.elements)
@@ -32,6 +36,9 @@ def test_index_form_and_assets():
         assert all(label in response.text for label in ('美形スコア', '平均顔距離', 'ボリュームゾーン度'))
         assert all(any(attrs.get('id') == element for _, attrs in parser.elements) for element in ('score', 'distance', 'volume-zone-score'))
         script = client.get('/static/app.js').text
+        assert "input.addEventListener('change'" in script
+        assert 'featureRevision++' in script and 'submittedRevision !== featureRevision' in script
+        assert 'result.hidden = true' in script and 'destroyVolumeZoneChart();' in script
         assert "data.volume_zone_score" in script and "data.distance" in script
         assert client.get('/static/style.css').status_code == 200
 

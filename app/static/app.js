@@ -8,7 +8,14 @@ const imagePreview = document.querySelector('#image-preview');
 const imagePreviewImage = document.querySelector('#image-preview-image');
 let previewUrl = null;
 let volumeZoneChart = null;
+let featureRevision = 0;
 const chartContainer = document.querySelector('#volume-zone-chart-container');
+
+form.querySelectorAll('[name="additional_feature"]').forEach(input => input.addEventListener('change', () => {
+  featureRevision++;
+  result.hidden = true;
+  destroyVolumeZoneChart();
+}));
 
 function destroyVolumeZoneChart() {
   if (volumeZoneChart) {
@@ -77,6 +84,7 @@ const messages = {
   image_size_limit: '画像のファイルサイズまたは寸法が上限を超えています。小さい画像を選んでください。',
   model_unavailable: '解析モデルを利用できません。しばらくしてからお試しください。',
   invalid_reference_group: '参照集団を選択してください。',
+  invalid_feature_selection: '追加項目の選択が不正です。選択内容を確認してください。',
   invalid_request: '入力内容を確認してください。',
   analysis_error: '解析できませんでした。別の画像でお試しください。'
 };
@@ -90,9 +98,11 @@ form.addEventListener('submit', async (event) => {
   error.hidden = true;
   status.textContent = '解析中...';
   const groupLabel = form.elements.reference_group.selectedOptions[0].textContent;
+  const submittedRevision = featureRevision;
   try {
     const response = await fetch('/analyze', { method: 'POST', body: new FormData(form) });
     const data = await response.json();
+    if (submittedRevision !== featureRevision) return;
     if (!response.ok) {
       const issues = data.error?.issues;
       error.textContent = Array.isArray(issues) && issues.length
@@ -105,6 +115,15 @@ form.addEventListener('submit', async (event) => {
     document.querySelector('#distance').textContent = String(data.distance);
     document.querySelector('#volume-zone-score').textContent = String(data.volume_zone_score);
     document.querySelector('#result-group').textContent = groupLabel;
+    document.querySelector('#result-profile').textContent = data.profile_id === 'core3+face_aspect_ratio'
+      ? '基本3特徴 + 顔の縦横比（実験的）' : '基本3特徴';
+    document.querySelector('#result-dimension').textContent = String(data.dimension);
+    const aspectDetail = document.querySelector('#aspect-detail');
+    aspectDetail.hidden = !data.used_features.includes('face_aspect_ratio');
+    if (!aspectDetail.hidden) {
+      document.querySelector('#aspect-value').textContent = data.features.face_aspect_ratio.toFixed(4);
+      document.querySelector('#aspect-z').textContent = data.z_scores.face_aspect_ratio.toFixed(4);
+    }
     document.querySelector('#notice').textContent = data.approximation_notice;
     document.querySelector('#quality-warnings').textContent = [...new Set((data.quality_warnings || []).map(warning => warning.message))].join('\n');
     result.hidden = false;

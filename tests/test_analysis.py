@@ -48,11 +48,37 @@ def test_api_success(client):
     assert 0 <= result['volume_zone_score'] <= 100
     assert {'distance', 'z_scores', 'features', 'model_mode', 'regularization_used'} <= result.keys()
     assert result['used_features'] == list(FEATURE_KEYS)
+    assert result['profile_id'] == 'core3'
     assert result['dimension'] == 3
     assert result['volume_zone_distribution']['mode_distance'] == pytest.approx(math.sqrt(2))
     assert len(result['volume_zone_distribution']['points']) == 101
     assert result['reference_model_version'] and result['algorithm_version']
     assert 'faces' not in result
+
+
+def test_optional_api(client, monkeypatch):
+    import app.analysis as analysis
+    from app.landmarks import FaceLandmark
+    landmarks = [FaceLandmark(.5, .5, 0) for _ in range(478)]
+    landmarks[168] = FaceLandmark(.5, .2, 0)
+    landmarks[152] = FaceLandmark(.5, .8, 0)
+    landmarks[234] = FaceLandmark(.2, .5, 0)
+    landmarks[454] = FaceLandmark(.8, .5, 0)
+    monkeypatch.setattr(analysis, 'validate', lambda *a, **kw: ValidationResult((CheckResult('face_count', True),), analysis_landmarks=landmarks))
+    def request(features):
+        files = [('image', ('face.png', FIXTURE.read_bytes(), 'image/png')),
+                 ('reference_group', (None, 'young_female'))]
+        files.extend(('additional_feature', (None, feature)) for feature in features)
+        return client.post('/analyze', files=files)
+    result = request(['face_aspect_ratio'])
+    assert result.status_code == 200
+    body = result.json()
+    assert body['profile_id'] == 'core3+face_aspect_ratio' and body['dimension'] == 4
+    assert body['used_features'] == list(FEATURE_KEYS) + ['face_aspect_ratio']
+    assert 'face_aspect_ratio' in body['features'] and 'face_aspect_ratio' in body['z_scores']
+    for selection in (['unknown'], ['face_aspect_ratio', 'face_aspect_ratio']):
+        response = request(selection)
+        assert response.status_code == 400 and response.json()['error']['code'] == 'invalid_feature_selection'
 
 
 def test_validation_response_has_safe_multiple_issues(client, monkeypatch):
@@ -107,6 +133,9 @@ def test_real_pipeline():
         result = AnalysisService(landmarker).analyze(FIXTURE.read_bytes(), 'young_female')
         assert 0 <= result.score <= 100
         assert 'HEAD_PITCH_WARNING' in [warning.code for warning in result.quality_warnings]
+        extended = AnalysisService(landmarker).analyze(FIXTURE.read_bytes(), 'young_female', ('face_aspect_ratio',))
+        assert extended.profile_id == 'core3+face_aspect_ratio' and extended.dimension == 4
+        assert extended.features['face_aspect_ratio'] > 0
     finally:
         landmarker.close()
 

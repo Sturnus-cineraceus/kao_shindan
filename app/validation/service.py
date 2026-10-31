@@ -98,8 +98,9 @@ def _quality(image: DecodedImage, config: ValidationConfig) -> list[CheckResult]
     ]
 
 
-def validate(image: DecodedImage, landmarks: LandmarkResult, config: ValidationConfig = ValidationConfig()) -> ValidationResult:
+def validate(image: DecodedImage, landmarks: LandmarkResult, config: ValidationConfig = ValidationConfig(), *, additional_required_landmarks: frozenset[int] = frozenset()) -> ValidationResult:
     """Return all executable checks; failed prerequisites suppress dependent checks."""
+    required = REQUIRED | additional_required_landmarks
     checks = []
     warnings = []
     analysis_points = None
@@ -108,7 +109,7 @@ def validate(image: DecodedImage, landmarks: LandmarkResult, config: ValidationC
     if count == 1:
         points = landmarks.faces[0]
         valid = all(i < len(points) and math.isfinite(points[i].x) and math.isfinite(points[i].y)
-                    and 0 <= points[i].x <= 1 and 0 <= points[i].y <= 1 for i in REQUIRED)
+                    and 0 <= points[i].x <= 1 and 0 <= points[i].y <= 1 for i in required)
         checks.append(_check("required_landmarks", valid, "required_landmark_missing"))
         matrix = landmarks.facial_transformation_matrices[0] if landmarks.facial_transformation_matrices else None
         angles = _pose(matrix, config)
@@ -148,7 +149,7 @@ def validate(image: DecodedImage, landmarks: LandmarkResult, config: ValidationC
                 if warning_limit < abs(angle) <= maximum:
                     warnings.append(QualityWarning("HEAD_" + name + "_WARNING", message))
     if count == 1:
-        missing = tuple(i for i in REQUIRED if not (i < len(landmarks.faces[0]) and
+        missing = tuple(i for i in required if not (i < len(landmarks.faces[0]) and
                         math.isfinite(landmarks.faces[0][i].x) and math.isfinite(landmarks.faces[0][i].y) and
                         0 <= landmarks.faces[0][i].x <= 1 and 0 <= landmarks.faces[0][i].y <= 1))
         for idx, check in enumerate(checks):

@@ -22,10 +22,23 @@ FEATURE_KEYS = (
 )
 NUMERATOR_KEYS = MEASUREMENT_KEYS[:2] + (MEASUREMENT_KEYS[3],)
 DENOMINATOR_KEY = "biectocanthion_breadth"
+OPTIONAL_FEATURE_ORDER = ("face_aspect_ratio",)
 
 
 class ModelError(ValueError):
     """Invalid numeric input or a model that cannot be evaluated safely."""
+
+
+def validate_additional_features(features: Sequence[str]) -> tuple[str, ...]:
+    if isinstance(features, (str, bytes)):
+        raise ModelError("invalid additional features")
+    try:
+        selected = tuple(features)
+        if any(not isinstance(item, str) or item not in OPTIONAL_FEATURE_ORDER for item in selected) or len(set(selected)) != len(selected):
+            raise ModelError("invalid additional features")
+    except TypeError as exc:
+        raise ModelError("invalid additional features") from exc
+    return tuple(key for key in OPTIONAL_FEATURE_ORDER if key in selected)
 
 
 @dataclass(frozen=True)
@@ -79,8 +92,10 @@ def build_reference_model(
     reference_data: ReferenceData | None = None,
     *,
     epsilon: float = EPSILON,
+    additional_features: Sequence[str] = (),
 ) -> ReferenceModel:
     """Build the fixed-order three-ratio model for exactly one reference group."""
+    selected = validate_additional_features(additional_features)
     if not np.isfinite(epsilon) or epsilon <= 0:
         raise ModelError("epsilon must be finite and positive")
     data = reference_data or load_reference_data()
@@ -109,6 +124,21 @@ def build_reference_model(
                 covariance[i, j] = variances[i]
             else:
                 covariance[i, j] = numerator_means[i] * numerator_means[j] * sd_y**2 / mu_y**4
+    if "face_aspect_ratio" in selected:
+        try:
+            h = group.measurements["morphologic_face_height"]
+            w = group.measurements["bizygomatic_breadth"]
+        except KeyError as exc:
+            raise ModelError("face aspect ratio reference measurements are missing") from exc
+        mu_h = _finite_positive(h.mean_mm, "face height mean")
+        sd_h = _finite_positive(h.sd_mm, "face height sd")
+        mu_w = _finite_positive(w.mean_mm, "face width mean")
+        sd_w = _finite_positive(w.sd_mm, "face width sd")
+        mean = np.append(mean, mu_h / mu_w)
+        expanded = np.zeros((4, 4), dtype=np.float64)
+        expanded[:3, :3] = covariance
+        expanded[3, 3] = sd_h**2 / mu_w**2 + mu_h**2 * sd_w**2 / mu_w**4
+        covariance = expanded
     if not np.isfinite(mean).all() or not np.isfinite(covariance).all():
         raise ModelError("Reference model contains non-finite values")
     if np.any(np.diag(covariance) <= 0):
@@ -117,7 +147,7 @@ def build_reference_model(
     for array in (mean, covariance):
         array.setflags(write=False)
     return ReferenceModel(
-        reference_group, MODEL_MODE, FEATURE_KEYS, mean, covariance,
+        reference_group, MODEL_MODE, FEATURE_KEYS + selected, mean, covariance,
         np.sqrt(np.diag(covariance)), data.model_version, float(epsilon),
     )
 
@@ -179,9 +209,10 @@ def compare_features(
     *,
     reference_data: ReferenceData | None = None,
     epsilon: float = EPSILON,
+    additional_features: Sequence[str] = (),
 ) -> StatisticsResult:
     """Return approximate z scores, Mahalanobis distance, and chi-square score."""
-    model = build_reference_model(reference_group, reference_data, epsilon=epsilon)
+    model = build_reference_model(reference_group, reference_data, epsilon=epsilon, additional_features=additional_features)
     dimension = len(model.features)
     observed = _coerce_features(features, model.features)
     delta = observed - model.mean

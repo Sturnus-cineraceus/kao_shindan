@@ -91,6 +91,15 @@ def test_missing_point():
     assert 'required_landmark_missing' in res.reasons
 
 
+def test_optional_landmark_is_only_required_when_selected():
+    p = points()
+    p[168] = FaceLandmark(float('nan'), .5, 0)
+    assert check(validate(image(), result(p)), 'required_landmarks').passed
+    selected = validate(image(), result(p), additional_required_landmarks=frozenset((168, 152, 234, 454)))
+    assert not check(selected, 'required_landmarks').passed
+    assert 168 in check(selected, 'required_landmarks').missing_ids
+
+
 @pytest.mark.parametrize('dy,passed', [(.04,True),(.041,False)])
 def test_mouth(dy, passed):
     p = points()
